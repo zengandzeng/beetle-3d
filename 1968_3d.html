@@ -1,0 +1,3509 @@
+<!DOCTYPE html>
+<html lang="zh-CN" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="google" content="notranslate" />
+    <title>VOLKSWAGEN BEETLE 1968 // 经典甲壳虫 Type 1 - 汽车工程蓝图图鉴</title>
+    <meta name="description" content="1968 Volkswagen Beetle Type 1 交互式 3D 汽车工程蓝图图鉴 — 支持车门/前后舱盖开合、爆炸拆解、全车配色定制及流星夜/赛博霓虹全景天幕切换。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="VOLKSWAGEN BEETLE 1968 // 经典甲壳虫 3D 工程图鉴" />
+    <meta property="og:description" content="交互式 3D 机械工程蓝图：体验 1968 经典甲壳虫开门、掀机盖、爆炸拆解、全车定制车漆与赛博棕榈大道巡航。" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#E6DFD1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700;900&family=Playfair+Display:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-parchment: #E6DFD1;
+            --bg-panel: rgba(232, 225, 211, 0.88);
+            --ink-dark: #221F1D;
+            --ink-muted: #6C6356;
+            --border-line: #B5AA99;
+            --border-dark: #544D44;
+            --accent-orange: #C85A17;
+            --accent-gold: #B6862C;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-parchment);
+            color: var(--ink-dark);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Architectural Grid & Parchment Texture Overlay */
+        .blueprint-bg {
+            background-color: var(--bg-parchment);
+            background-image: 
+                radial-gradient(circle at 50% 48%, rgba(255, 250, 240, 0.5) 0%, rgba(212, 202, 184, 0.42) 65%, rgba(185, 173, 154, 0.68) 100%),
+                linear-gradient(to right, rgba(145, 134, 118, 0.14) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(145, 134, 118, 0.14) 1px, transparent 1px),
+                linear-gradient(to right, rgba(145, 134, 118, 0.26) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(145, 134, 118, 0.26) 1px, transparent 1px);
+            background-size: 100% 100%, 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+        }
+
+        .serif-title {
+            font-family: 'Playfair Display', 'Noto Serif SC', serif;
+        }
+
+        /* Custom HUD Buttons */
+        .hud-btn {
+            background: rgba(238, 232, 220, 0.82);
+            border: 1px solid var(--border-dark);
+            color: var(--ink-dark);
+            transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+            position: relative;
+            border-radius: 3px;
+        }
+        .hud-btn:hover {
+            background: rgba(215, 206, 190, 0.95);
+            border-color: var(--ink-dark);
+            transform: translateY(-1px);
+        }
+        .hud-btn.active {
+            background: #2C2723;
+            color: #F2ECE1;
+            border-color: #1A1715;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.45);
+        }
+        .hud-btn.active svg {
+            stroke: #F2ECE1;
+        }
+
+        /* Section Divider with '+' symbol */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            color: var(--ink-dark);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        /* Control Card Container for Breathing Room */
+        .control-card {
+            background: rgba(226, 218, 202, 0.48);
+            border: 1px solid var(--border-line);
+            border-radius: 4px;
+            padding: 12px;
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Smooth Panel Collapse for Fullscreen Mode */
+        #left-hud-panel,
+        #right-hud-panel {
+            transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease;
+        }
+        body.hud-collapsed #left-hud-panel {
+            transform: translateX(-115%);
+            opacity: 0;
+            pointer-events: none !important;
+        }
+        body.hud-collapsed #right-hud-panel {
+            transform: translateX(115%);
+            opacity: 0;
+            pointer-events: none !important;
+        }
+
+        /* Callout Node Styling */
+        .callout-node {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #EAE3D5;
+            border: 1.5px solid #221F1D;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #221F1D;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+            pointer-events: auto;
+            flex-shrink: 0;
+        }
+        .callout-node:hover, .callout-node.active {
+            background: var(--accent-orange);
+            color: #FFF;
+            border-color: #FFF;
+            transform: scale(1.18);
+        }
+
+        /* Swatch Button */
+        .swatch-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 2px;
+            border: 1px solid rgba(34, 31, 29, 0.55);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            cursor: pointer;
+        }
+        .swatch-btn:hover {
+            transform: scale(1.16);
+            z-index: 5;
+        }
+        .swatch-btn.selected {
+            outline: 2px solid var(--accent-orange);
+            outline-offset: 2px;
+            transform: scale(1.1);
+        }
+
+        /* Part selector tab */
+        .part-tab {
+            cursor: pointer;
+            padding: 6px 8px;
+            font-size: 9.5px;
+            letter-spacing: 0.06em;
+            border-left: 2px solid transparent;
+            color: var(--ink-muted);
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: 0 3px 3px 0;
+        }
+        .part-tab:hover {
+            color: var(--ink-dark);
+            background: rgba(181, 170, 153, 0.2);
+        }
+        .part-tab.active {
+            color: var(--ink-dark);
+            font-weight: 700;
+            border-left-color: var(--accent-orange);
+            background: rgba(181, 170, 153, 0.36);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #B5AA99;
+            border-radius: 2px;
+        }
+
+        /* Elevation Card Hover */
+        .elevation-card {
+            background: rgba(235, 229, 216, 0.65);
+            border: 1px solid var(--border-line);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .elevation-card:hover {
+            border-color: var(--ink-dark);
+            background: rgba(242, 237, 227, 0.9);
+        }
+        .elevation-card.active {
+            border-color: var(--accent-orange);
+            background: rgba(244, 239, 230, 0.95);
+            box-shadow: inset 0 0 0 1px var(--accent-orange);
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.45; transform: scale(0.85); }
+        }
+        .pulse-dot {
+            animation: pulse-dot 2s infinite ease-in-out;
+        }
+
+        /* ====================================================================
+           DYNAMIC ENVIRONMENT THEMES (DAY / STARRY NIGHT / CYBERPUNK)
+           ==================================================================== */
+        body {
+            transition: background-color 0.55s ease, color 0.45s ease;
+        }
+
+        body.theme-night,
+        body.theme-cyber {
+            --ink-dark: #F2EFE9;
+            --ink-muted: #B0B8C8;
+            --border-line: rgba(140, 165, 205, 0.28);
+            --border-dark: rgba(165, 190, 230, 0.48);
+        }
+
+        body.theme-cyber {
+            --accent-orange: #00F0FF;
+        }
+
+        /* Dark Glassmorphic Panels for Night & Cyber Modes */
+        body.theme-night aside,
+        body.theme-cyber aside {
+            background: rgba(11, 15, 26, 0.72) !important;
+            backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+        }
+
+        body.theme-cyber aside {
+            background: rgba(18, 8, 34, 0.74) !important;
+            border-color: rgba(255, 42, 164, 0.35) !important;
+            box-shadow: 0 0 28px rgba(255, 0, 128, 0.18);
+        }
+
+        body.theme-night .control-card {
+            background: rgba(18, 25, 42, 0.65);
+            border-color: rgba(140, 165, 205, 0.24);
+        }
+        body.theme-cyber .control-card {
+            background: rgba(30, 11, 52, 0.62);
+            border-color: rgba(255, 42, 164, 0.28);
+        }
+
+        /* Text & Divider adaptation in Dark Themes */
+        body.theme-night h1, body.theme-cyber h1,
+        body.theme-night .section-header, body.theme-cyber .section-header,
+        body.theme-night #stat-vertices, body.theme-cyber #stat-vertices,
+        body.theme-night #stat-polygons, body.theme-cyber #stat-polygons {
+            color: #F6F4F0 !important;
+        }
+
+        body.theme-night p, body.theme-cyber p,
+        body.theme-night footer, body.theme-cyber footer {
+            color: #B8C2D4 !important;
+        }
+
+        body.theme-night .hud-btn,
+        body.theme-cyber .hud-btn {
+            background: rgba(24, 32, 52, 0.78);
+            border-color: rgba(150, 175, 215, 0.36);
+            color: #E8ECF4;
+        }
+        body.theme-cyber .hud-btn {
+            background: rgba(36, 14, 62, 0.78);
+            border-color: rgba(0, 240, 255, 0.38);
+        }
+        body.theme-night .hud-btn:hover,
+        body.theme-cyber .hud-btn:hover {
+            background: rgba(52, 68, 104, 0.9);
+            border-color: #FFFFFF;
+        }
+        body.theme-night .hud-btn.active {
+            background: #E86F2C;
+            color: #FFFFFF;
+            border-color: #FFA066;
+            box-shadow: 0 0 14px rgba(232, 111, 44, 0.55);
+        }
+        body.theme-cyber .hud-btn.active {
+            background: linear-gradient(135deg, #FF1E8A, #7928CA);
+            color: #FFFFFF;
+            border-color: #00F0FF;
+            box-shadow: 0 0 16px rgba(255, 30, 138, 0.65);
+        }
+
+        body.theme-night .elevation-card,
+        body.theme-cyber .elevation-card {
+            background: rgba(20, 27, 44, 0.65);
+            border-color: rgba(150, 175, 215, 0.28);
+        }
+        body.theme-cyber .elevation-card {
+            background: rgba(31, 12, 54, 0.68);
+            border-color: rgba(255, 42, 164, 0.32);
+        }
+        body.theme-night .elevation-card div,
+        body.theme-cyber .elevation-card div {
+            color: #E2E8F0 !important;
+        }
+
+        /* Callout Text in Dark Modes */
+        body.theme-night #callout-layer div,
+        body.theme-cyber #callout-layer div {
+            color: #F2F5FA !important;
+            border-color: rgba(255, 255, 255, 0.32) !important;
+        }
+        body.theme-night #callout-layer p,
+        body.theme-cyber #callout-layer p {
+            color: #C2CCE0 !important;
+        }
+        body.theme-night #callout-svg polyline {
+            stroke: #8AB4F8 !important;
+        }
+        body.theme-cyber #callout-svg polyline {
+            stroke: #00F0FF !important;
+        }
+    </style>
+</head>
+<body class="blueprint-bg relative select-none">
+
+    <!-- FULLSCREEN ANIMATED ENVIRONMENT BACKDROP CANVAS (Meteors / Synthwave Horizon) -->
+    <canvas id="env-bg-canvas" class="fixed inset-0 w-full h-full pointer-events-none z-0 opacity-0 transition-opacity duration-500"></canvas>
+
+    <!-- OUTER ARCHITECTURAL SHEET FRAME & RULER TICKS -->
+    <div id="sheet-frame" class="fixed inset-2 sm:inset-3 border border-[#8E8474] pointer-events-none z-30 flex flex-col justify-between transition-colors duration-500">
+        <!-- Top Ruler Marks -->
+        <div class="w-full h-2 flex justify-between items-start px-6 opacity-60">
+            <span class="text-[8px] tracking-widest -mt-0.5">00</span>
+            <div class="h-1.5 w-px bg-[#544D44]"></div>
+            <div class="h-1 w-px bg-[#544D44]"></div>
+            <div class="h-1.5 w-px bg-[#544D44]"></div>
+            <div class="h-1 w-px bg-[#544D44]"></div>
+            <span class="text-[8px] tracking-widest -mt-0.5">100</span>
+            <div class="h-1 w-px bg-[#544D44]"></div>
+            <div class="h-1.5 w-px bg-[#544D44]"></div>
+            <div class="h-1 w-px bg-[#544D44]"></div>
+            <div class="h-1.5 w-px bg-[#544D44]"></div>
+            <span class="text-[8px] tracking-widest -mt-0.5">200</span>
+            <div class="h-1 w-px bg-[#544D44]"></div>
+            <div class="h-1.5 w-px bg-[#544D44]"></div>
+            <div class="h-1 w-px bg-[#544D44]"></div>
+            <div class="h-1.5 w-px bg-[#544D44]"></div>
+            <span class="text-[8px] tracking-widest -mt-0.5">300</span>
+        </div>
+
+        <!-- Corner Crosshairs -->
+        <div class="absolute -top-1.5 -left-1.5 text-xs font-bold text-[#544D44]">+</div>
+        <div class="absolute -top-1.5 -right-1.5 text-xs font-bold text-[#544D44]">+</div>
+        <div class="absolute -bottom-1.5 -left-1.5 text-xs font-bold text-[#544D44]">+</div>
+        <div class="absolute -bottom-1.5 -right-1.5 text-xs font-bold text-[#544D44]">+</div>
+
+        <!-- Bottom Ruler Marks -->
+        <div class="w-full h-2 flex justify-between items-end px-6 opacity-60">
+            <span class="text-[8px] tracking-widest -mb-0.5">WOLFSBURG-1968-T1</span>
+            <div class="h-1.5 w-px bg-[#544D44]"></div>
+            <div class="h-1 w-px bg-[#544D44]"></div>
+            <div class="h-1.5 w-px bg-[#544D44]"></div>
+            <span class="text-[8px] tracking-widest -mb-0.5">SCALE 1:10 // 1500cc FLAT-4</span>
+            <div class="h-1.5 w-px bg-[#544D44]"></div>
+            <div class="h-1 w-px bg-[#544D44]"></div>
+            <div class="h-1.5 w-px bg-[#544D44]"></div>
+            <span class="text-[8px] tracking-widest -mb-0.5">SHEET 01 OF 01</span>
+        </div>
+    </div>
+
+    <!-- 3D CANVAS CONTAINER (FULL BLEED CENTER) -->
+    <div id="canvas-container" class="fixed inset-0 z-0 cursor-grab active:cursor-grabbing"></div>
+
+    <!-- SVG OVERLAY FOR 3D CALLOUT LEADER LINES (Desktop/Tablet) -->
+    <svg id="callout-svg" class="fixed inset-0 w-full h-full pointer-events-none z-10 hidden lg:block transition-opacity duration-300">
+        <polyline id="leader-1" fill="none" stroke="#3A342E" stroke-width="1.15" />
+        <polyline id="leader-2" fill="none" stroke="#3A342E" stroke-width="1.15" />
+        <polyline id="leader-3" fill="none" stroke="#3A342E" stroke-width="1.15" />
+        <polyline id="leader-4" fill="none" stroke="#3A342E" stroke-width="1.15" />
+        <circle id="anchor-dot-1" r="3.2" fill="#221F1D" stroke="#EAE3D5" stroke-width="1.2" />
+        <circle id="anchor-dot-2" r="3.2" fill="#221F1D" stroke="#EAE3D5" stroke-width="1.2" />
+        <circle id="anchor-dot-3" r="3.2" fill="#221F1D" stroke="#EAE3D5" stroke-width="1.2" />
+        <circle id="anchor-dot-4" r="3.2" fill="#221F1D" stroke="#EAE3D5" stroke-width="1.2" />
+    </svg>
+
+    <!-- FLOATING CALLOUT TEXT LABELS IN CENTER VIEWPORT -->
+    <div id="callout-layer" class="fixed inset-0 pointer-events-none z-10 hidden lg:block transition-opacity duration-300">
+        <!-- Callout 1: Top Left (Front Luggage Hood & Chrome Trim) -->
+        <div id="callout-box-1" class="absolute flex items-start gap-2.5 max-w-[240px]" style="left: 26.5%; top: 10%;">
+            <div class="callout-node" onclick="focusAnnotation(1)" title="点击掀开/查看前备箱盖">1</div>
+            <div>
+                <div class="text-[10px] font-bold tracking-wider uppercase text-[#221F1D] border-b border-[#8E8474] pb-0.5 mb-1">
+                    CURVED BONNET & TRIM · 流线前舱盖
+                </div>
+                <p class="text-[9.5px] leading-relaxed text-[#5C5346]">
+                    Stamped steel sloping luggage hood with central chrome spear, spare wheel well & VW crest.
+                </p>
+            </div>
+        </div>
+
+        <!-- Callout 2: Bottom Left (Overrider Bumper & Sealed-Beam Headlamps) -->
+        <div id="callout-box-2" class="absolute flex items-start gap-2.5 max-w-[240px]" style="left: 26.5%; top: 64%;">
+            <div class="callout-node" onclick="focusAnnotation(2)" title="点击点亮/查看复古大灯与镀铬杠">2</div>
+            <div>
+                <div class="text-[10px] font-bold tracking-wider uppercase text-[#221F1D] border-b border-[#8E8474] pb-0.5 mb-1">
+                    OVERRIDER BUMPER · 双层镀铬保险杠
+                </div>
+                <p class="text-[9.5px] leading-relaxed text-[#5C5346]">
+                    1968 US-spec tubular chrome overrider bumper, upright round headlamps & 'VOSVOS' collector plate.
+                </p>
+            </div>
+        </div>
+
+        <!-- Callout 3: Top Right (Rear Louvered Decklid & Flat-4 Engine) -->
+        <div id="callout-box-3" class="absolute flex items-start gap-2.5 max-w-[245px]" style="left: 58.5%; top: 14%;">
+            <div class="callout-node" onclick="focusAnnotation(3)" title="点击查看后置风冷引擎">3</div>
+            <div>
+                <div class="text-[10px] font-bold tracking-wider uppercase text-[#221F1D] border-b border-[#8E8474] pb-0.5 mb-1">
+                    AIR-COOLED FLAT-4 · 后置风冷引擎舱
+                </div>
+                <p class="text-[9.5px] leading-relaxed text-[#5C5346]">
+                    28-slat louvered rear engine lid housing the iconic 1500cc horizontally-opposed boxer engine & twin exhausts.
+                </p>
+            </div>
+        </div>
+
+        <!-- Callout 4: Bottom Right (Cream Steel Disc Wheels & Hubcaps) -->
+        <div id="callout-box-4" class="absolute flex items-start gap-2.5 max-w-[245px]" style="left: 59%; top: 66%;">
+            <div class="callout-node" onclick="focusAnnotation(4)" title="点击聚焦奶油白钢圈轮毂">4</div>
+            <div>
+                <div class="text-[10px] font-bold tracking-wider uppercase text-[#221F1D] border-b border-[#8E8474] pb-0.5 mb-1">
+                    STEEL DISC WHEELS · 复古奶油白轮毂
+                </div>
+                <p class="text-[9.5px] leading-relaxed text-[#5C5346]">
+                    15-inch slotted cream steel wheels crowned with domed mirror-chrome hubcaps & ribbed running boards.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN HUD INTERFACE (LEFT & RIGHT ARCHITECTURAL PANELS) -->
+    <div class="relative z-20 w-full h-full p-4 sm:p-6 flex flex-col lg:flex-row justify-between pointer-events-none overflow-y-auto lg:overflow-hidden">
+
+        <!-- FLOATING EXPAND HUD BUTTON (Shown when panels are collapsed for fullscreen viewing) -->
+        <button id="btn-expand-hud" onclick="toggleHudPanels()" class="fixed top-5 left-5 z-40 pointer-events-auto hidden items-center gap-2 px-3.5 py-2 hud-btn shadow-lg font-bold text-[10px] tracking-[0.14em] uppercase">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+                <polyline points="13 9 16 12 13 15"/>
+            </svg>
+            <span>SHOW UI · 展开参数栏</span>
+        </button>
+
+        <!-- ==================== LEFT PANEL: ERGONOMICALLY SPACED CONTROLS & FINISHES ==================== -->
+        <aside id="left-hud-panel" class="w-full lg:w-[340px] xl:w-[356px] h-full flex flex-col justify-between pointer-events-auto bg-[#E8E1D3]/90 lg:bg-[#E8E1D3]/75 backdrop-blur-md p-4 sm:p-5 rounded-md border border-[#B5AA99] mb-4 lg:mb-0 overflow-y-auto">
+            
+            <div class="space-y-5">
+                <!-- Header Block with Top-Right Collapse Button -->
+                <header class="pb-1">
+                    <div class="flex items-start justify-between gap-2 mb-1.5">
+                        <span class="text-[9.5px] tracking-[0.18em] text-[#6C6356] uppercase pt-0.5">
+                            AUTOMOTIVE HERITAGE // 经典机械工程志
+                        </span>
+                        <button onclick="toggleHudPanels()" class="hud-btn px-2 py-1 flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase shrink-0" title="收起左右参数栏，全屏纯净观看">
+                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <polyline points="11 17 6 12 11 7"/>
+                                <polyline points="18 17 13 12 18 7"/>
+                            </svg>
+                            <span>HIDE · 收起</span>
+                        </button>
+                    </div>
+                    <h1 class="serif-title text-2xl sm:text-[26px] font-bold leading-[1.08] tracking-wide text-[#221F1D] uppercase">
+                        VOLKSWAGEN<br>BEETLE 1968
+                    </h1>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="text-xs font-bold tracking-widest text-[#C85A17] serif-title">Type 1 · 经典甲壳虫</span>
+                        <span class="text-[9px] px-2 py-0.5 bg-[#D5CBB8] text-[#3A342E] font-semibold rounded-sm">VOSVOS CONCOURS</span>
+                    </div>
+                </header>
+
+                <!-- 1. EXPLORE THE MODEL (Comfortable Card Grouping + Restored Exploded View) -->
+                <section class="control-card">
+                    <div class="section-header whitespace-nowrap">
+                        <span>+</span>
+                        <span>01 // EXPLORE MODEL · 机械交互控制</span>
+                    </div>
+
+                    <!-- Auto-Rotate / Drag Status Bar -->
+                    <button id="btn-autorotate" onclick="toggleAutoRotate()" class="w-full py-2 px-3 mb-3 bg-[#2C2723] text-[#F2ECE1] text-[10px] tracking-[0.14em] uppercase flex items-center justify-center gap-2 border border-[#221F1D] rounded-sm hover:bg-[#423B35] transition">
+                        <span id="rotate-dot" class="w-2 h-2 rounded-full bg-[#E86F2C] pulse-dot"></span>
+                        <span id="rotate-status-text">DRAG OR CLICK: AUTO-ROTATE</span>
+                    </button>
+
+                    <!-- Primary 2x2 Action Matrix (Includes Restored Exploded View) -->
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button id="btn-doors" onclick="toggleFeature('doors')" class="hud-btn py-2.5 px-2.5 flex flex-col items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                <path d="M4 17V7l8-3v16l-8-3zM12 6h7a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-7"/>
+                                <circle cx="9.5" cy="12" r="0.8"/>
+                            </svg>
+                            <span class="text-[9.5px] font-semibold tracking-wider uppercase">OPEN DOORS · 开车门</span>
+                        </button>
+
+                        <button id="btn-hoods" onclick="toggleFeature('hoods')" class="hud-btn py-2.5 px-2.5 flex flex-col items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                <path d="M3 15h18M5 15l3-6h8l3 6M8 9L4 5M16 9l4-4"/>
+                            </svg>
+                            <span class="text-[9.5px] font-semibold tracking-wider uppercase">BONNET & DECK · 掀机盖</span>
+                        </button>
+
+                        <button id="btn-lights" onclick="toggleFeature('lights')" class="hud-btn active py-2.5 px-2.5 flex flex-col items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                <circle cx="12" cy="12" r="5"/>
+                                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/>
+                            </svg>
+                            <span class="text-[9.5px] font-semibold tracking-wider uppercase">HEADLIGHTS · 车灯</span>
+                        </button>
+
+                        <button id="btn-exploded" onclick="toggleFeature('exploded')" class="hud-btn py-2.5 px-2.5 flex flex-col items-center justify-center gap-1.5" title="展开底盘、车壳、翼子板与四缸风冷引擎爆炸视图">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                <path d="M12 2L4 6l8 4 8-4-8-4z"/>
+                                <path d="M4 12l8 4 8-4"/>
+                                <path d="M4 18l8 4 8-4"/>
+                            </svg>
+                            <span class="text-[9.5px] font-semibold tracking-wider uppercase">EXPLODED · 爆炸拆解</span>
+                        </button>
+                    </div>
+
+                    <!-- Secondary Row: Cruise Mode, Wireframe Mode & Annotations Toggle -->
+                    <div class="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-[#B5AA99]/50">
+                        <button id="btn-cruise" onclick="toggleFeature('cruise')" class="hud-btn py-2 px-1.5 flex items-center justify-center gap-1" title="开启/关闭车轮运转与引擎微震">
+                            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                <circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/>
+                                <path d="M2 17h2M10 17h4M20 17h2M4 11l3-5h9l4 5"/>
+                            </svg>
+                            <span class="text-[8.5px] font-semibold tracking-wider uppercase">CRUISE·巡航</span>
+                        </button>
+
+                        <button id="btn-wireframe" onclick="toggleFeature('wireframe')" class="hud-btn py-2 px-1.5 flex items-center justify-center gap-1" title="切换工程线框图模式">
+                            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                                <polyline points="2 17 12 22 22 17"/>
+                                <polyline points="2 12 12 17 22 12"/>
+                            </svg>
+                            <span class="text-[8.5px] font-semibold tracking-wider uppercase">WIRE·线框</span>
+                        </button>
+
+                        <button id="btn-annotations" onclick="toggleFeature('annotations')" class="hud-btn active py-2 px-1.5 flex items-center justify-center gap-1" title="开启/关闭画面中的标注文字与引线">
+                            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                <circle cx="6" cy="6" r="3"/>
+                                <path d="M8.5 7.5L15 14h6"/>
+                                <line x1="15" y1="18" x2="21" y2="18"/>
+                            </svg>
+                            <span class="text-[8.5px] font-semibold tracking-wider uppercase">LABELS·标注</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- 2. ENVIRONMENT & VIEWPORT PERSPECTIVE -->
+                <section class="control-card space-y-3.5">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="section-header !mb-0">
+                                <span>+</span>
+                                <span>02 // ENVIRONMENT · 场景天幕</span>
+                            </div>
+                            <span id="env-badge" class="text-[8px] px-1.5 py-0.5 bg-[#D5CBB8] text-[#221F1D] font-bold rounded-sm">STUDIO DAY</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button id="env-day" onclick="setEnvironmentMode('day')" class="hud-btn active py-2 px-2 flex flex-col items-center justify-center gap-1" title="经典工程图纸白天模式">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                    <circle cx="12" cy="12" r="4.5"/>
+                                    <path d="M12 2v2.5M12 19.5V22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M2 12h2.5M19.5 12H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77"/>
+                                </svg>
+                                <span class="text-[8.5px] font-semibold tracking-wider">DAY · 白天</span>
+                            </button>
+
+                            <button id="env-night" onclick="setEnvironmentMode('night')" class="hud-btn py-2 px-2 flex flex-col items-center justify-center gap-1" title="星夜2秒循环璀璨流星雨 + 远光灯开启">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                                    <path d="M15 4l5 5M18 3l3 3"/>
+                                </svg>
+                                <span class="text-[8.5px] font-semibold tracking-wider">NIGHT · 流星夜</span>
+                            </button>
+
+                            <button id="env-cyber" onclick="setEnvironmentMode('cyber')" class="hud-btn py-2 px-2 flex flex-col items-center justify-center gap-1" title="赛博复古落日棕榈大道 + 车身霓虹环境反射">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                                </svg>
+                                <span class="text-[8.5px] font-semibold tracking-wider">CYBER · 赛博</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pt-2.5 border-t border-[#B5AA99]/50">
+                        <div class="text-[9.5px] font-bold tracking-[0.14em] text-[#544D44] uppercase mb-2">
+                            CAMERA VIEW · 工程视角切换
+                        </div>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button id="view-iso" onclick="setCameraView('iso')" class="hud-btn active py-2 flex flex-col items-center justify-center gap-1">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                                </svg>
+                                <span class="text-[8.5px] font-semibold tracking-widest">ISO</span>
+                            </button>
+                            <button id="view-side" onclick="setCameraView('side')" class="hud-btn py-2 flex flex-col items-center justify-center gap-1">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                    <path d="M3 15c1-4 4-7 9-7s8 3 9 7H3z"/>
+                                    <circle cx="7.5" cy="15" r="2.2"/><circle cx="16.5" cy="15" r="2.2"/>
+                                </svg>
+                                <span class="text-[8.5px] font-semibold tracking-widest">SIDE</span>
+                            </button>
+                            <button id="view-front" onclick="setCameraView('front')" class="hud-btn py-2 flex flex-col items-center justify-center gap-1">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                    <path d="M5 16c0-5 3-9 7-9s7 4 7 9"/>
+                                    <line x1="3" y1="16" x2="21" y2="16"/>
+                                    <circle cx="7.5" cy="13" r="1.2"/><circle cx="16.5" cy="13" r="1.2"/>
+                                </svg>
+                                <span class="text-[8.5px] font-semibold tracking-widest">FRONT</span>
+                            </button>
+                            <button id="view-rear" onclick="setCameraView('rear')" class="hud-btn py-2 flex flex-col items-center justify-center gap-1">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                    <path d="M5 16c0-5 3-9 7-9s7 4 7 9"/>
+                                    <line x1="3" y1="16" x2="21" y2="16"/>
+                                    <path d="M9 11h6"/>
+                                </svg>
+                                <span class="text-[8.5px] font-semibold tracking-widest">REAR</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. BESPOKE FINISH (FULL-CAR COLOR & STYLE CUSTOMIZER) -->
+                <section class="control-card">
+                    <div class="flex items-center justify-between mb-2.5">
+                        <div class="section-header !mb-0">
+                            <span>+</span>
+                            <span>03 // BESPOKE FINISH · 色彩定制</span>
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button id="btn-gloss" onclick="togglePaintFinish()" class="text-[8.5px] px-2 py-0.5 border border-[#8E8474] hover:border-[#221F1D] bg-[#DFD7C6] text-[#221F1D] font-semibold tracking-wider uppercase rounded-sm transition" title="切换高光清漆 / 金属珠光 / 复古哑光">
+                                FINISH: GLOSS
+                            </button>
+                            <button onclick="resetColors()" class="text-[8.5px] px-2 py-0.5 border border-[#8E8474] hover:border-[#221F1D] bg-[#DFD7C6] text-[#221F1D] font-semibold tracking-wider uppercase rounded-sm transition">
+                                ↺ RESET
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 items-center pt-1">
+                        <!-- Part Categories -->
+                        <div class="flex-1 space-y-1.5 border-r border-[#B5AA99] pr-2.5">
+                            <div id="part-body" onclick="selectPartCategory('body')" class="part-tab active">
+                                <span>BODYWORK · 车身漆面</span>
+                                <span id="dot-body" class="w-2.5 h-2.5 rounded-full border border-black/40" style="background:#F4F1EA;"></span>
+                            </div>
+                            <div id="part-wheels" onclick="selectPartCategory('wheels')" class="part-tab">
+                                <span>WHEEL RIM · 钢圈轮毂</span>
+                                <span id="dot-wheels" class="w-2.5 h-2.5 rounded-full border border-black/40" style="background:#F4F1EA;"></span>
+                            </div>
+                            <div id="part-interior" onclick="selectPartCategory('interior')" class="part-tab">
+                                <span>INTERIOR · 座舱内饰</span>
+                                <span id="dot-interior" class="w-2.5 h-2.5 rounded-full border border-black/40" style="background:#E2D8C5;"></span>
+                            </div>
+                            <div id="part-trim" onclick="selectPartCategory('trim')" class="part-tab">
+                                <span>CHROME TRIM · 镀铬件</span>
+                                <span id="dot-trim" class="w-2.5 h-2.5 rounded-full border border-black/40" style="background:#F0F3F5;"></span>
+                            </div>
+                        </div>
+
+                        <!-- 4x4 Vintage Automotive Color Swatches -->
+                        <div id="swatch-grid" class="grid grid-cols-4 gap-1.5">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Bottom Technical Telemetry Table -->
+            <footer class="pt-3 mt-4 border-t border-[#B5AA99] text-[10px] space-y-1.5 text-[#544D44]">
+                <div class="flex justify-between">
+                    <span class="tracking-widest uppercase">VERTICES // POLYGONS</span>
+                    <span class="font-bold text-[#221F1D]" id="stat-vertices">64,920 // 118,400</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="tracking-widest uppercase">POWERTRAIN</span>
+                    <span class="font-bold text-[#C85A17]">1,493 CC AIR-COOLED FLAT-4</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="tracking-widest uppercase">WHEELBASE // UNITS</span>
+                    <span class="font-bold text-[#221F1D]">2,400 MM // METRIC</span>
+                </div>
+            </footer>
+        </aside>
+
+        <!-- ==================== RIGHT PANEL: ELEVATIONS & FULL-CAR STYLE PRESETS ==================== -->
+        <aside id="right-hud-panel" class="w-full lg:w-[310px] xl:w-[335px] flex flex-col justify-between pointer-events-auto bg-[#E8E1D3]/88 lg:bg-transparent backdrop-blur-sm lg:backdrop-blur-none p-3 lg:p-1 rounded border border-[#B5AA99] lg:border-none">
+            
+            <!-- TECHNICAL ELEVATIONS (Orthographic Blueprints of 1968 Beetle) -->
+            <div>
+                <div class="section-header">
+                    <span>+</span>
+                    <span>TECHNICAL ELEVATIONS · 三视图立面</span>
+                </div>
+
+                <div class="space-y-2.5">
+                    <!-- 1. SIDE ELEVATION -->
+                    <div id="elev-side" onclick="setCameraView('side')" class="elevation-card p-2 relative" title="点击切换至侧立面正交视角">
+                        <svg viewBox="0 0 280 116" class="w-full h-[94px] overflow-visible">
+                            <line x1="26" y1="100" x2="254" y2="100" stroke="#544D44" stroke-width="0.8"/>
+                            <line x1="26" y1="95" x2="26" y2="104" stroke="#544D44" stroke-width="0.8"/>
+                            <line x1="254" y1="95" x2="254" y2="104" stroke="#544D44" stroke-width="0.8"/>
+                            <path d="M36 70 Q44 48 76 44 Q98 18 148 18 Q192 18 214 46 Q236 52 244 70 Z" fill="#E4DAC6" stroke="#221F1D" stroke-width="1.2"/>
+                            <path d="M88 43 Q102 25 134 24 L134 45 L88 45 Z" fill="#CFC4B0" stroke="#221F1D" stroke-width="1"/>
+                            <path d="M140 24 Q174 25 190 45 L140 45 Z" fill="#CFC4B0" stroke="#221F1D" stroke-width="1"/>
+                            <line x1="85" y1="44" x2="85" y2="70" stroke="#221F1D" stroke-width="0.8"/>
+                            <line x1="137" y1="24" x2="137" y2="70" stroke="#221F1D" stroke-width="0.9"/>
+                            <rect x="125" y="49" width="8" height="2.2" fill="#221F1D"/>
+                            <path d="M52 52 Q135 46 218 55" fill="none" stroke="#C85A17" stroke-width="1"/>
+                            <path d="M32 72 Q58 42 92 72" fill="#D8CEBA" stroke="#221F1D" stroke-width="1.2"/>
+                            <path d="M182 72 Q216 42 246 72" fill="#D8CEBA" stroke="#221F1D" stroke-width="1.2"/>
+                            <rect x="88" y="70" width="98" height="3.5" fill="#544D44" stroke="#221F1D" stroke-width="0.8"/>
+                            <rect x="23" y="63" width="10" height="4" rx="1" fill="#F2ECE1" stroke="#221F1D" stroke-width="0.9"/>
+                            <rect x="28" y="57" width="3" height="11" rx="1" fill="#F2ECE1" stroke="#221F1D" stroke-width="0.8"/>
+                            <rect x="246" y="63" width="10" height="4" rx="1" fill="#F2ECE1" stroke="#221F1D" stroke-width="0.9"/>
+                            <rect x="248" y="57" width="3" height="11" rx="1" fill="#F2ECE1" stroke="#221F1D" stroke-width="0.8"/>
+                            <circle cx="62" cy="72" r="18" fill="#3A342E" stroke="#221F1D" stroke-width="1.1"/>
+                            <circle cx="62" cy="72" r="11.5" fill="#F4EFE3" stroke="#221F1D" stroke-width="0.9"/>
+                            <circle cx="62" cy="72" r="7" fill="#D5CBB8" stroke="#221F1D" stroke-width="0.8"/>
+                            <circle cx="214" cy="72" r="18" fill="#3A342E" stroke="#221F1D" stroke-width="1.1"/>
+                            <circle cx="214" cy="72" r="11.5" fill="#F4EFE3" stroke="#221F1D" stroke-width="0.9"/>
+                            <circle cx="214" cy="72" r="7" fill="#D5CBB8" stroke="#221F1D" stroke-width="0.8"/>
+                        </svg>
+                        <div class="text-center -mt-1">
+                            <div class="text-[8.5px] tracking-[0.15em] text-[#544D44] uppercase">SIDE ELEVATION · 侧立面图</div>
+                            <div class="text-[9.5px] font-bold text-[#221F1D]">L 4,070 MM</div>
+                        </div>
+                    </div>
+
+                    <!-- 2. FRONT ELEVATION -->
+                    <div id="elev-front" onclick="setCameraView('front')" class="elevation-card p-2 relative" title="点击切换至正立面正交视角">
+                        <svg viewBox="0 0 280 120" class="w-full h-[98px] overflow-visible">
+                            <line x1="46" y1="16" x2="46" y2="88" stroke="#544D44" stroke-width="0.8"/>
+                            <line x1="42" y1="16" x2="50" y2="16" stroke="#544D44" stroke-width="0.8"/>
+                            <line x1="42" y1="88" x2="50" y2="88" stroke="#544D44" stroke-width="0.8"/>
+                            <text x="36" y="52" text-anchor="middle" transform="rotate(-90 36 52)" fill="#221F1D" font-size="7.5" font-weight="bold">H 1,500 MM</text>
+                            <line x1="80" y1="100" x2="200" y2="100" stroke="#544D44" stroke-width="0.8"/>
+                            <line x1="80" y1="96" x2="80" y2="104" stroke="#544D44" stroke-width="0.8"/>
+                            <line x1="200" y1="96" x2="200" y2="104" stroke="#544D44" stroke-width="0.8"/>
+                            <rect x="82" y="62" width="14" height="26" rx="3" fill="#3A342E" stroke="#221F1D" stroke-width="1"/>
+                            <rect x="184" y="62" width="14" height="26" rx="3" fill="#3A342E" stroke="#221F1D" stroke-width="1"/>
+                            <path d="M98 48 Q104 16 140 16 Q176 16 182 48 Z" fill="#E4DAC6" stroke="#221F1D" stroke-width="1.1"/>
+                            <path d="M105 42 Q110 23 140 23 Q170 23 175 42 Z" fill="#CFC4B0" stroke="#221F1D" stroke-width="0.9"/>
+                            <path d="M78 72 Q80 45 104 48 L176 48 Q200 45 202 72 Z" fill="#D8CEBA" stroke="#221F1D" stroke-width="1.1"/>
+                            <path d="M104 72 Q108 38 140 38 Q172 38 176 72 Z" fill="#E4DAC6" stroke="#221F1D" stroke-width="1.1"/>
+                            <line x1="140" y1="38" x2="140" y2="68" stroke="#C85A17" stroke-width="1.1"/>
+                            <circle cx="93" cy="56" r="7.5" fill="#F7F4EB" stroke="#221F1D" stroke-width="1.1"/>
+                            <circle cx="187" cy="56" r="7.5" fill="#F7F4EB" stroke="#221F1D" stroke-width="1.1"/>
+                            <rect x="76" y="70" width="128" height="4.5" rx="2" fill="#F2ECE1" stroke="#221F1D" stroke-width="1"/>
+                            <path d="M105 70 V61 H175 V70" fill="none" stroke="#221F1D" stroke-width="1.1"/>
+                            <rect x="103" y="61" width="4" height="13" rx="1" fill="#F2ECE1" stroke="#221F1D" stroke-width="0.9"/>
+                            <rect x="173" y="61" width="4" height="13" rx="1" fill="#F2ECE1" stroke="#221F1D" stroke-width="0.9"/>
+                            <rect x="126" y="69" width="28" height="9" fill="#221F1D"/>
+                            <text x="140" y="75.5" text-anchor="middle" fill="#E5B84B" font-size="5.5" font-weight="bold">VM 1968</text>
+                        </svg>
+                        <div class="text-center -mt-1">
+                            <div class="text-[8.5px] tracking-[0.15em] text-[#544D44] uppercase">FRONT ELEVATION · 正立面图</div>
+                            <div class="text-[9.5px] font-bold text-[#221F1D]">W 1,540 MM</div>
+                        </div>
+                    </div>
+
+                    <!-- 3. REAR ELEVATION -->
+                    <div id="elev-rear" onclick="setCameraView('rear')" class="elevation-card p-2 relative" title="点击切换至背立面正交视角">
+                        <svg viewBox="0 0 280 110" class="w-full h-[88px] overflow-visible">
+                            <rect x="82" y="58" width="14" height="26" rx="3" fill="#3A342E" stroke="#221F1D" stroke-width="1"/>
+                            <rect x="184" y="58" width="14" height="26" rx="3" fill="#3A342E" stroke="#221F1D" stroke-width="1"/>
+                            <path d="M98 46 Q104 14 140 14 Q176 14 182 46 Z" fill="#E4DAC6" stroke="#221F1D" stroke-width="1.1"/>
+                            <path d="M108 38 Q114 21 140 21 Q166 21 172 38 Z" fill="#CFC4B0" stroke="#221F1D" stroke-width="0.9"/>
+                            <path d="M78 68 Q80 43 104 46 L176 46 Q200 43 202 68 Z" fill="#D8CEBA" stroke="#221F1D" stroke-width="1.1"/>
+                            <path d="M106 68 Q110 42 140 42 Q170 42 174 68 Z" fill="#E4DAC6" stroke="#221F1D" stroke-width="1.1"/>
+                            <line x1="118" y1="41" x2="162" y2="41" stroke="#221F1D" stroke-width="2" stroke-dasharray="1.5 1.5"/>
+                            <ellipse cx="93" cy="56" rx="4.5" ry="6.5" fill="#C85A17" stroke="#221F1D" stroke-width="1"/>
+                            <ellipse cx="187" cy="56" rx="4.5" ry="6.5" fill="#C85A17" stroke="#221F1D" stroke-width="1"/>
+                            <rect x="76" y="66" width="128" height="4.5" rx="2" fill="#F2ECE1" stroke="#221F1D" stroke-width="1"/>
+                            <rect x="103" y="58" width="4" height="13" rx="1" fill="#F2ECE1" stroke="#221F1D" stroke-width="0.9"/>
+                            <rect x="173" y="58" width="4" height="13" rx="1" fill="#F2ECE1" stroke="#221F1D" stroke-width="0.9"/>
+                            <circle cx="127" cy="75" r="2" fill="#3A342E"/><circle cx="153" cy="75" r="2" fill="#3A342E"/>
+                        </svg>
+                        <div class="text-center -mt-1">
+                            <div class="text-[8.5px] tracking-[0.15em] text-[#544D44] uppercase">REAR ELEVATION · 背立面图</div>
+                            <div class="text-[9.5px] font-bold text-[#221F1D]">LOUVERED DECKLID</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CURATED FULL-CAR STYLE EDITIONS (Bottom Right Preset Cards) -->
+            <div class="mt-3 pt-2.5 border-t border-[#B5AA99]">
+                <div class="section-header">
+                    <span>+</span>
+                    <span>CURATED EDITIONS · 全车风格预设</span>
+                </div>
+
+                <div class="grid grid-cols-4 gap-1.5">
+                    <!-- Edition 1: Alpine White VOSVOS -->
+                    <div onclick="applyStylePreset('vosvoswhite')" class="cursor-pointer group text-center" title="复刻参考图1：阿尔卑斯白 VOSVOS + 同色钢圈与白边胎">
+                        <div class="h-14 w-full border border-[#544D44] overflow-hidden relative shadow-sm group-hover:border-[#C85A17] transition"
+                             style="background: radial-gradient(circle at 30% 30%, #FFFFFF, #EAE6DF 72%, #BFB8AC);">
+                            <div class="absolute bottom-0 inset-x-0 h-4 bg-[#F4F1EA] border-t border-[#221F1D]/40 flex items-center justify-center">
+                                <span class="text-[7px] font-bold tracking-widest text-[#221F1D]">VOSVOS</span>
+                            </div>
+                        </div>
+                        <div class="text-[7.5px] font-bold tracking-wider uppercase mt-1 text-[#221F1D] leading-tight">
+                            ALPINE WHITE<br><span class="text-[#6C6356] font-normal">阿尔卑斯纯白</span>
+                        </div>
+                    </div>
+
+                    <!-- Edition 2: Bahama / Sunflower Yellow -->
+                    <div onclick="applyStylePreset('sunflower')" class="cursor-pointer group text-center" title="复刻参考图2：经典向日葵黄 + 双色白边轮毂">
+                        <div class="h-14 w-full border border-[#544D44] overflow-hidden relative shadow-sm group-hover:border-[#C85A17] transition"
+                             style="background: radial-gradient(circle at 30% 30%, #FFD438, #E5A910 72%, #9E6E04);">
+                            <div class="absolute bottom-0 inset-x-0 h-4 bg-[#FAF6EE] border-t border-[#221F1D]/40 flex items-center justify-center">
+                                <span class="text-[7px] font-bold tracking-widest text-[#221F1D]">1968 T1</span>
+                            </div>
+                        </div>
+                        <div class="text-[7.5px] font-bold tracking-wider uppercase mt-1 text-[#221F1D] leading-tight">
+                            SUNFLOWER<br><span class="text-[#6C6356] font-normal">向日葵明黄</span>
+                        </div>
+                    </div>
+
+                    <!-- Edition 3: Palm Springs Sunset Orange -->
+                    <div onclick="applyStylePreset('palmsprings')" class="cursor-pointer group text-center" title="棕榈泉落日橙 + 奶油白钢圈轮毂">
+                        <div class="h-14 w-full border border-[#544D44] overflow-hidden relative shadow-sm group-hover:border-[#C85A17] transition"
+                             style="background: radial-gradient(circle at 30% 30%, #F07829, #C85212 72%, #7D2E06);">
+                            <div class="absolute bottom-0 inset-x-0 h-4 bg-[#F2EAD8] border-t border-[#221F1D]/40 flex items-center justify-center">
+                                <span class="text-[7px] font-bold tracking-widest text-[#221F1D]">VM 1968</span>
+                            </div>
+                        </div>
+                        <div class="text-[7.5px] font-bold tracking-wider uppercase mt-1 text-[#221F1D] leading-tight">
+                            PALM SPRINGS<br><span class="text-[#6C6356] font-normal">棕榈泉落日橙</span>
+                        </div>
+                    </div>
+
+                    <!-- Edition 4: Stuttgart Irish Green -->
+                    <div onclick="applyStylePreset('irishgreen')" class="cursor-pointer group text-center" title="斯图加特爱尔兰绿 + 复古焦糖棕真皮内饰">
+                        <div class="h-14 w-full border border-[#544D44] overflow-hidden relative shadow-sm group-hover:border-[#C85A17] transition"
+                             style="background: radial-gradient(circle at 30% 30%, #2E6B4E, #16402B 80%);">
+                            <div class="absolute bottom-0 inset-x-0 h-4 bg-[#B87B48] border-t border-[#E5C158]/50"></div>
+                        </div>
+                        <div class="text-[7.5px] font-bold tracking-wider uppercase mt-1 text-[#221F1D] leading-tight">
+                            IRISH GREEN<br><span class="text-[#6C6356] font-normal">复古森系绿</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- TOAST / STATUS NOTIFICATION PILL (Top Center) -->
+    <div id="hud-toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none opacity-0 transition-opacity duration-300 bg-[#221F1D] text-[#F2ECE1] px-4 py-1.5 text-[10px] tracking-[0.18em] uppercase border border-[#C85A17] shadow-lg">
+        SYSTEM READY
+    </div>
+
+    <script>
+        // ============================================================================
+        // 1. PROCEDURAL TEXTURES & DYNAMIC ENVIRONMENT REFLECTION MAPS (DAY / NIGHT / CYBER)
+        // ============================================================================
+        function createDynamicEnvMap(mode = 'day') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            if (mode === 'day') {
+                // High-contrast automotive studio softbox & horizon gradient
+                const grad = ctx.createLinearGradient(0, 0, 0, 512);
+                grad.addColorStop(0, '#FFFFFF');
+                grad.addColorStop(0.28, '#F7F3EB');
+                grad.addColorStop(0.47, '#D8CFC0');
+                grad.addColorStop(0.5, '#4A433B');
+                grad.addColorStop(0.54, '#BFB4A2');
+                grad.addColorStop(1, '#7A7062');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 1024, 512);
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(60, 36, 360, 42);
+                ctx.fillRect(580, 36, 360, 42);
+                ctx.fillRect(180, 115, 660, 24);
+                ctx.fillStyle = 'rgba(255,250,240,0.85)';
+                ctx.fillRect(90, 180, 840, 18);
+            } else if (mode === 'night') {
+                // Starry Night & Moonlight Blue Reflection Map
+                const grad = ctx.createLinearGradient(0, 0, 0, 512);
+                grad.addColorStop(0.0, '#040917');
+                grad.addColorStop(0.28, '#10254C');
+                grad.addColorStop(0.48, '#2C5898');
+                grad.addColorStop(0.50, '#8EC5FF');
+                grad.addColorStop(0.55, '#0B1324');
+                grad.addColorStop(1.0, '#04060C');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 1024, 512);
+
+                // Bright comet & moonlight specular strips on sheet-metal
+                ctx.fillStyle = '#DDF0FF';
+                ctx.fillRect(100, 52, 320, 26);
+                ctx.fillRect(600, 48, 320, 26);
+                ctx.fillStyle = '#78B4FF';
+                ctx.fillRect(180, 145, 680, 18);
+            } else if (mode === 'cyber') {
+                // Vivid Synthwave Sunset, Hot Pink, Gold & Electric Cyan Reflection Map for Car Body
+                const grad = ctx.createLinearGradient(0, 0, 0, 512);
+                grad.addColorStop(0.0, '#1B062E');
+                grad.addColorStop(0.20, '#8A1158');
+                grad.addColorStop(0.38, '#FF2A85');
+                grad.addColorStop(0.47, '#FFAE42');
+                grad.addColorStop(0.50, '#FFF59D');
+                grad.addColorStop(0.53, '#00F0FF');
+                grad.addColorStop(0.68, '#380946');
+                grad.addColorStop(1.0, '#12031E');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 1024, 512);
+
+                // Neon highway tube reflections & sunset glow bands across the Beetle's curves
+                ctx.fillStyle = '#00F0FF';
+                ctx.fillRect(40, 65, 400, 28);
+                ctx.fillRect(580, 65, 400, 28);
+
+                ctx.fillStyle = '#FF2A85';
+                ctx.fillRect(80, 130, 860, 32);
+
+                ctx.fillStyle = '#FFF099';
+                ctx.fillRect(200, 210, 624, 30);
+
+                ctx.fillStyle = '#00F0FF';
+                ctx.fillRect(120, 285, 780, 20);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            return texture;
+        }
+
+        function createLicensePlateTexture(plateText = 'VOSVOS') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#F6F5F0';
+            ctx.fillRect(0, 0, 512, 128);
+
+            ctx.strokeStyle = '#18181A';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(8, 8, 496, 112);
+
+            ctx.fillStyle = '#141416';
+            ctx.font = '700 76px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(plateText, 256, 68);
+
+            ctx.fillStyle = '#777';
+            ctx.beginPath();
+            ctx.arc(42, 64, 7, 0, Math.PI * 2);
+            ctx.arc(470, 64, 7, 0, Math.PI * 2);
+            ctx.fill();
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.anisotropy = 4;
+            return tex;
+        }
+
+        function createHeadlightLensTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            const rad = ctx.createRadialGradient(128, 128, 8, 128, 128, 124);
+            rad.addColorStop(0, '#FFFFFF');
+            rad.addColorStop(0.45, '#F0F4F8');
+            rad.addColorStop(0.78, '#C2CCD4');
+            rad.addColorStop(0.94, '#7E8890');
+            rad.addColorStop(1, '#4A5258');
+            ctx.fillStyle = rad;
+            ctx.fillRect(0, 0, 256, 256);
+
+            ctx.strokeStyle = 'rgba(70, 82, 92, 0.38)';
+            ctx.lineWidth = 2.5;
+            for (let x = 20; x < 236; x += 10) {
+                ctx.beginPath();
+                ctx.moveTo(x, 16);
+                ctx.lineTo(x, 240);
+                ctx.stroke();
+            }
+
+            ctx.beginPath();
+            ctx.arc(128, 128, 28, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(210, 220, 228, 0.85)';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#68727A';
+            ctx.stroke();
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createVWHubcapTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            const rad = ctx.createRadialGradient(100, 100, 10, 128, 128, 126);
+            rad.addColorStop(0, '#FFFFFF');
+            rad.addColorStop(0.55, '#E5E9EC');
+            rad.addColorStop(0.85, '#B4BCC2');
+            rad.addColorStop(1, '#788088');
+            ctx.fillStyle = rad;
+            ctx.fillRect(0, 0, 256, 256);
+
+            ctx.strokeStyle = 'rgba(60, 65, 70, 0.55)';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.arc(128, 128, 92, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(45, 50, 55, 0.72)';
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.arc(128, 128, 48, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.font = 'bold 52px "Playfair Display", serif';
+            ctx.fillStyle = 'rgba(45, 50, 55, 0.72)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('VW', 128, 131);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createHornGrilleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#18181A';
+            ctx.fillRect(0, 0, 128, 64);
+
+            ctx.strokeStyle = '#D8DEE2';
+            ctx.lineWidth = 5;
+            for (let y = 10; y <= 54; y += 11) {
+                ctx.beginPath();
+                ctx.moveTo(8, y);
+                ctx.lineTo(120, y);
+                ctx.stroke();
+            }
+            ctx.lineWidth = 8;
+            ctx.strokeRect(4, 4, 120, 56);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createSoftLensGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            const grad = ctx.createRadialGradient(128, 128, 2, 128, 128, 126);
+            grad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+            grad.addColorStop(0.16, 'rgba(245, 250, 255, 0.82)');
+            grad.addColorStop(0.42, 'rgba(200, 228, 255, 0.34)');
+            grad.addColorStop(0.72, 'rgba(165, 205, 255, 0.08)');
+            grad.addColorStop(1.0, 'rgba(140, 190, 255, 0.0)');
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 256, 256);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createVolumetricBeamTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            const imgData = ctx.createImageData(256, 512);
+            const data = imgData.data;
+
+            for (let y = 0; y < 512; y++) {
+                const v = 1.0 - (y / 511);
+                const longFade = Math.sin(Math.min(1, v * 5.5) * Math.PI * 0.5) * Math.pow(1.0 - v, 1.75);
+                const halfWidth = 0.16 + v * 0.68;
+
+                for (let x = 0; x < 256; x++) {
+                    const u = (x - 128) / 128;
+                    const normDist = Math.abs(u) / halfWidth;
+                    let latFade = 0;
+                    if (normDist < 1.0) {
+                        latFade = Math.pow(Math.cos(normDist * Math.PI * 0.5), 2.4);
+                    }
+
+                    const alpha = longFade * latFade * 0.62;
+                    const idx = (y * 256 + x) * 4;
+                    data[idx] = 232;
+                    data[idx + 1] = 244;
+                    data[idx + 2] = 255;
+                    data[idx + 3] = Math.min(255, Math.floor(alpha * 255));
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createGroundPoolTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            const grad = ctx.createRadialGradient(128, 340, 8, 128, 220, 210);
+            grad.addColorStop(0.0, 'rgba(240, 248, 255, 0.52)');
+            grad.addColorStop(0.35, 'rgba(205, 230, 255, 0.24)');
+            grad.addColorStop(0.7, 'rgba(170, 205, 255, 0.06)');
+            grad.addColorStop(1.0, 'rgba(150, 190, 255, 0.0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 256, 512);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // ============================================================================
+        // 2. COLOR PALETTE & BESPOKE CUSTOMIZATION STATE
+        // ============================================================================
+        const SWATCH_PALETTE = [
+            { name: '阿尔卑斯白 Alpine White', hex: '#F4F1EA' },
+            { name: '向日葵明黄 Sunflower Yellow', hex: '#F2B718' },
+            { name: '棕榈泉橙 Palm Springs Orange', hex: '#D85E18' },
+            { name: '巴哈马蓝 Bahama Blue', hex: '#2B5B84' },
+            { name: '复古湖水绿 Savannah Teal', hex: '#2F6E6B' },
+            { name: '斯图加特绿 Irish Green', hex: '#1E5438' },
+            { name: '胭脂红 Ruby Red', hex: '#9E1F24' },
+            { name: '珍珠奶油白 Lotus White', hex: '#EDE3CE' },
+            { name: '撒哈拉米色 Sahara Beige', hex: '#D6C6A5' },
+            { name: '克莱门氏橙 Clementine Orange', hex: '#E87424' },
+            { name: '复古焦糖棕 Saddle Tan', hex: '#9C5B30' },
+            { name: '鼠尾草灰绿 Sage Green', hex: '#6B7D65' },
+            { name: '皇家海军蓝 Royal Navy', hex: '#1B2A42' },
+            { name: '枪管金属灰 Gunmetal Grey', hex: '#4B5056' },
+            { name: '曜石黑漆 Obsidian Black', hex: '#18181A' },
+            { name: '镜面镀铬银 Mirror Chrome', hex: '#F0F3F5' }
+        ];
+
+        const DEFAULT_FINISH = {
+            body: '#F4F1EA',
+            wheels: '#F4F1EA',
+            interior: '#E2D8C5',
+            trim: '#F0F3F5'
+        };
+
+        let currentFinish = { ...DEFAULT_FINISH };
+        let activePartCategory = 'body';
+        let paintFinishMode = 'gloss';
+
+        const appState = {
+            autoRotate: true,
+            doorsOpen: false,
+            hoodsOpen: false,
+            lightsOn: true,
+            explodedView: false,
+            cruiseActive: false,
+            wireframeMode: false,
+            annotationsVisible: true,
+            currentView: 'iso',
+            envMode: 'day' // 'day' | 'night' | 'cyber'
+        };
+
+        // ============================================================================
+        // 3. THREE.JS SCENE, CAMERA, LIGHTING & AUTOMOTIVE CLEARCOAT MATERIALS
+        // ============================================================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+
+        const envMaps = {
+            day: createDynamicEnvMap('day'),
+            night: createDynamicEnvMap('night'),
+            cyber: createDynamicEnvMap('cyber')
+        };
+        scene.environment = envMaps.day;
+
+        const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 100);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.12;
+        container.appendChild(renderer.domElement);
+
+        // Studio & Environment Lighting Setup
+        const ambientLight = new THREE.AmbientLight(0xFFF9F0, 0.78);
+        scene.add(ambientLight);
+
+        const hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0xC4B69E, 0.68);
+        hemiLight.position.set(0, 15, 0);
+        scene.add(hemiLight);
+
+        const sunLight = new THREE.DirectionalLight(0xFFF6E5, 1.5);
+        sunLight.position.set(7.5, 13, 9.5);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 2;
+        sunLight.shadow.camera.far = 28;
+        const sd = 4.8;
+        sunLight.shadow.camera.left = -sd;
+        sunLight.shadow.camera.right = sd;
+        sunLight.shadow.camera.top = sd;
+        sunLight.shadow.camera.bottom = -sd;
+        sunLight.shadow.bias = -0.0004;
+        scene.add(sunLight);
+
+        const fillLight = new THREE.DirectionalLight(0xE8F0F8, 0.65);
+        fillLight.position.set(-9, 6, -8);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.DirectionalLight(0xFFF0D6, 0.55);
+        rimLight.position.set(0, 8, -10);
+        scene.add(rimLight);
+
+        // Textures
+        const plateTex = createLicensePlateTexture('VOSVOS');
+        const headlampTex = createHeadlightLensTexture();
+        const hubcapTex = createVWHubcapTexture();
+        const hornGrilleTex = createHornGrilleTexture();
+        const beamConeTex = createVolumetricBeamTexture();
+        const softGlowTex = createSoftLensGlowTexture();
+        const groundPoolTex = createGroundPoolTexture();
+
+        const materials = {
+            carPaint: new THREE.MeshPhysicalMaterial({
+                color: currentFinish.body,
+                roughness: 0.11,
+                metalness: 0.08,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.04,
+                reflectivity: 0.98,
+                envMap: envMaps.day,
+                envMapIntensity: 1.45,
+                side: THREE.DoubleSide
+            }),
+            wheelRim: new THREE.MeshPhysicalMaterial({
+                color: currentFinish.wheels,
+                roughness: 0.16,
+                metalness: 0.08,
+                clearcoat: 0.9,
+                envMap: envMaps.day,
+                envMapIntensity: 1.15
+            }),
+            whitewallRing: new THREE.MeshStandardMaterial({
+                color: 0xF7F4EB,
+                roughness: 0.35,
+                metalness: 0.02
+            }),
+            chrome: new THREE.MeshStandardMaterial({
+                color: currentFinish.trim,
+                roughness: 0.05,
+                metalness: 0.96,
+                envMap: envMaps.day,
+                envMapIntensity: 1.75,
+                side: THREE.DoubleSide
+            }),
+            hubcapChrome: new THREE.MeshStandardMaterial({
+                color: currentFinish.trim,
+                map: hubcapTex,
+                roughness: 0.08,
+                metalness: 0.94,
+                envMap: envMaps.day,
+                envMapIntensity: 1.65
+            }),
+            hornGrille: new THREE.MeshStandardMaterial({
+                map: hornGrilleTex,
+                roughness: 0.25,
+                metalness: 0.8
+            }),
+            interiorLeather: new THREE.MeshStandardMaterial({
+                color: currentFinish.interior,
+                roughness: 0.48,
+                metalness: 0.04,
+                side: THREE.DoubleSide
+            }),
+            rubberTire: new THREE.MeshStandardMaterial({
+                color: 0x171719,
+                roughness: 0.76,
+                metalness: 0.04,
+                side: THREE.DoubleSide
+            }),
+            chassisDark: new THREE.MeshStandardMaterial({
+                color: 0x1A1918,
+                roughness: 0.68,
+                metalness: 0.22,
+                side: THREE.DoubleSide
+            }),
+            engineMetal: new THREE.MeshStandardMaterial({
+                color: 0x9CA3AB,
+                roughness: 0.32,
+                metalness: 0.8,
+                envMap: envMaps.day
+            }),
+            glassTint: new THREE.MeshPhysicalMaterial({
+                color: 0xE4F0EE,
+                transparent: true,
+                opacity: 0.28,
+                roughness: 0.03,
+                metalness: 0.08,
+                reflectivity: 0.98,
+                envMap: envMaps.day,
+                envMapIntensity: 1.5,
+                side: THREE.DoubleSide
+            }),
+            headlampGlass: new THREE.MeshStandardMaterial({
+                color: 0xFFFFFF,
+                map: headlampTex,
+                emissive: 0xFFE8B0,
+                emissiveIntensity: 0.68,
+                roughness: 0.08,
+                metalness: 0.25
+            }),
+            turnSignalAmber: new THREE.MeshStandardMaterial({
+                color: 0xFF7B00,
+                emissive: 0xFF6A00,
+                emissiveIntensity: 0.55,
+                roughness: 0.18
+            }),
+            tailLampRed: new THREE.MeshStandardMaterial({
+                color: 0xC81414,
+                emissive: 0xFF1E00,
+                emissiveIntensity: 0.65,
+                roughness: 0.18
+            }),
+            licensePlate: new THREE.MeshStandardMaterial({
+                map: plateTex,
+                roughness: 0.3,
+                metalness: 0.15
+            }),
+            volumetricBeam: new THREE.MeshBasicMaterial({
+                map: beamConeTex,
+                color: 0xEBF5FF,
+                transparent: true,
+                opacity: 0.0,
+                depthWrite: false,
+                side: THREE.DoubleSide,
+                blending: THREE.AdditiveBlending
+            }),
+            headlampHaloSprite: new THREE.SpriteMaterial({
+                map: softGlowTex,
+                color: 0xF5FAFF,
+                transparent: true,
+                opacity: 0.0,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            }),
+            groundLightPool: new THREE.MeshBasicMaterial({
+                map: groundPoolTex,
+                color: 0xEBF5FF,
+                transparent: true,
+                opacity: 0.0,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            })
+        };
+
+        // ============================================================================
+        // 4. COACHBUILDER-GRADE SPLINE-LOFTED 1968 VW BEETLE (TYPE 1) 3D MODEL
+        // ============================================================================
+        const beetleRoot = new THREE.Group();
+        scene.add(beetleRoot);
+
+        const chassisGroup = new THREE.Group();
+        const bodyShellGroup = new THREE.Group();
+        const fendersGroup = new THREE.Group();
+        const bumpersGroup = new THREE.Group();
+        const interiorGroup = new THREE.Group();
+        const engineGroup = new THREE.Group();
+
+        beetleRoot.add(chassisGroup);
+        beetleRoot.add(bodyShellGroup);
+        beetleRoot.add(fendersGroup);
+        beetleRoot.add(bumpersGroup);
+        beetleRoot.add(interiorGroup);
+        beetleRoot.add(engineGroup);
+
+        let leftDoorPivot, rightDoorPivot;
+        let frontHoodPivot, rearDecklidPivot;
+        const wheelMeshes = [];
+        const wheelGroupRefs = [];
+        const headlampSpotLights = [];
+        const volumetricBeamMeshes = [];
+        let shadowPlaneMat, groundRingMat, cyberTailStreaksGroup;
+
+        function createLoftedSurfaceGeometry(sectionCurves, uSegments = 40, vSegments = 28) {
+            const splines = sectionCurves.map(pts => new THREE.CatmullRomCurve3(pts, false, 'centripetal'));
+            const positions = [];
+            const uvs = [];
+            const indices = [];
+
+            for (let iv = 0; iv <= vSegments; iv++) {
+                const v = iv / vSegments;
+                const rowPts = splines.map(sp => sp.getPoint(v));
+                const longitudinalSpline = new THREE.CatmullRomCurve3(rowPts, false, 'centripetal');
+
+                for (let iu = 0; iu <= uSegments; iu++) {
+                    const u = iu / uSegments;
+                    const pt = longitudinalSpline.getPoint(u);
+                    positions.push(pt.x, pt.y, pt.z);
+                    uvs.push(u, v);
+                }
+            }
+
+            const stride = uSegments + 1;
+            for (let iv = 0; iv < vSegments; iv++) {
+                for (let iu = 0; iu < uSegments; iu++) {
+                    const a = iv * stride + iu;
+                    const b = a + 1;
+                    const c = (iv + 1) * stride + iu;
+                    const d = c + 1;
+                    indices.push(a, b, d);
+                    indices.push(a, d, c);
+                }
+            }
+
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+            geo.setIndex(indices);
+            geo.computeVertexNormals();
+            return geo;
+        }
+
+        function createBeetleWheel(isLeft) {
+            const wheelAssembly = new THREE.Group();
+            const spinGroup = new THREE.Group();
+            wheelAssembly.add(spinGroup);
+
+            const outSign = isLeft ? 1 : -1;
+
+            const tireProfile = [
+                new THREE.Vector2(0.25, -0.095),
+                new THREE.Vector2(0.32, -0.105),
+                new THREE.Vector2(0.37, -0.095),
+                new THREE.Vector2(0.395, -0.072),
+                new THREE.Vector2(0.402, -0.035),
+                new THREE.Vector2(0.404, 0.0),
+                new THREE.Vector2(0.402, 0.035),
+                new THREE.Vector2(0.395, 0.072),
+                new THREE.Vector2(0.37, 0.095),
+                new THREE.Vector2(0.32, 0.105),
+                new THREE.Vector2(0.25, 0.095)
+            ];
+            const tireLatheGeo = new THREE.LatheGeometry(tireProfile, 48);
+            tireLatheGeo.rotateZ(-Math.PI / 2);
+            const tireMesh = new THREE.Mesh(tireLatheGeo, materials.rubberTire);
+            tireMesh.castShadow = true;
+            tireMesh.receiveShadow = true;
+            spinGroup.add(tireMesh);
+
+            [-0.048, -0.016, 0.016, 0.048].forEach(tx => {
+                const grooveGeo = new THREE.TorusGeometry(0.403, 0.0035, 8, 48);
+                const groove = new THREE.Mesh(grooveGeo, materials.chassisDark);
+                groove.rotation.y = Math.PI / 2;
+                groove.position.x = tx;
+                spinGroup.add(groove);
+            });
+
+            const wwGeo = new THREE.RingGeometry(0.255, 0.305, 48);
+            wwGeo.rotateY(outSign > 0 ? Math.PI / 2 : -Math.PI / 2);
+            const wwMesh = new THREE.Mesh(wwGeo, materials.whitewallRing);
+            wwMesh.position.x = outSign * 0.101;
+            spinGroup.add(wwMesh);
+
+            const rimDiscGeo = new THREE.CylinderGeometry(0.258, 0.258, 0.17, 36);
+            rimDiscGeo.rotateZ(Math.PI / 2);
+            const rimDisc = new THREE.Mesh(rimDiscGeo, materials.wheelRim);
+            spinGroup.add(rimDisc);
+
+            // Clean flat inner rim step ring (Removed the perpendicular protruding hoop)
+            const innerStepGeo = new THREE.TorusGeometry(0.215, 0.016, 16, 36);
+            innerStepGeo.rotateY(Math.PI / 2);
+            const innerStep = new THREE.Mesh(innerStepGeo, materials.carPaint);
+            innerStep.position.x = outSign * 0.086;
+            spinGroup.add(innerStep);
+
+            for (let s = 0; s < 10; s++) {
+                const angle = (s / 10) * Math.PI * 2;
+                const slotGeo = new THREE.BoxGeometry(0.022, 0.018, 0.042);
+                const slot = new THREE.Mesh(slotGeo, materials.chassisDark);
+                slot.position.set(
+                    outSign * 0.095,
+                    Math.cos(angle) * 0.205,
+                    Math.sin(angle) * 0.205
+                );
+                slot.rotation.x = -angle;
+                spinGroup.add(slot);
+            }
+
+            const capGeo = new THREE.SphereGeometry(0.168, 32, 20, 0, Math.PI * 2, 0, Math.PI * 0.44);
+            const capMesh = new THREE.Mesh(capGeo, materials.hubcapChrome);
+            capMesh.rotation.z = isLeft ? -Math.PI / 2 : Math.PI / 2;
+            capMesh.scale.set(1, 0.42, 1);
+            capMesh.position.x = outSign * 0.068;
+            spinGroup.add(capMesh);
+
+            const capFlangeGeo = new THREE.TorusGeometry(0.162, 0.01, 12, 36);
+            capFlangeGeo.rotateY(Math.PI / 2);
+            const capFlange = new THREE.Mesh(capFlangeGeo, materials.chrome);
+            capFlange.position.x = outSign * 0.094;
+            spinGroup.add(capFlange);
+
+            wheelMeshes.push(spinGroup);
+            return wheelAssembly;
+        }
+
+        function createSculptedFender(isFront, isLeft) {
+            const fenderGroup = new THREE.Group();
+            const s = isLeft ? 1 : -1;
+
+            const archSections = [];
+            const numArchSteps = 14;
+            const startAng = isFront ? -0.32 : -0.38;
+            const endAng = isFront ? Math.PI + 0.38 : Math.PI + 0.42;
+
+            for (let i = 0; i <= numArchSteps; i++) {
+                const t = i / numArchSteps;
+                const ang = startAng + t * (endAng - startAng);
+
+                const taper = isFront
+                    ? (1.0 - 0.08 * Math.pow(Math.max(0, 0.35 - t), 2))
+                    : (1.0 - 0.08 * Math.pow(Math.max(0, t - 0.65), 2));
+
+                const rInner = 0.43 * taper;
+                const rPeak = 0.505 * taper;
+                const rOuter = 0.455 * taper;
+
+                const zCos = Math.cos(ang);
+                const ySin = Math.sin(ang);
+
+                const flareW = 0.25 * Math.sin(t * Math.PI * 0.85 + 0.22);
+
+                const pBodyEdge = new THREE.Vector3(s * 0.56, ySin * rInner, zCos * rInner * 1.06);
+                const pInnerShoulder = new THREE.Vector3(s * (0.64 + flareW * 0.35), ySin * rPeak + 0.02, zCos * rPeak * 1.07);
+                const pCrown = new THREE.Vector3(s * (0.76 + flareW * 0.78), ySin * rPeak, zCos * rPeak * 1.06);
+                const pOuterLip = new THREE.Vector3(s * (0.83 + flareW * 0.88), ySin * rOuter - 0.02, zCos * rOuter * 1.04);
+                const pWheelWell = new THREE.Vector3(s * (0.78 + flareW * 0.72), ySin * (rOuter - 0.045) - 0.03, zCos * (rOuter - 0.03) * 1.02);
+
+                if (isLeft) {
+                    archSections.push([pBodyEdge, pInnerShoulder, pCrown, pOuterLip, pWheelWell]);
+                } else {
+                    archSections.push([pWheelWell, pOuterLip, pCrown, pInnerShoulder, pBodyEdge]);
+                }
+            }
+
+            const fenderGeo = createLoftedSurfaceGeometry(archSections, 36, 18);
+            const fenderMesh = new THREE.Mesh(fenderGeo, materials.carPaint);
+            fenderMesh.castShadow = true;
+            fenderMesh.receiveShadow = true;
+            fenderGroup.add(fenderMesh);
+
+            const beadPoints = [];
+            for (let i = 1; i < numArchSteps; i++) {
+                const t = i / numArchSteps;
+                const ang = startAng + t * (endAng - startAng);
+                beadPoints.push(new THREE.Vector3(
+                    s * 0.59,
+                    Math.sin(ang) * 0.455 + 0.01,
+                    Math.cos(ang) * 0.48
+                ));
+            }
+            const beadCurve = new THREE.CatmullRomCurve3(beadPoints);
+            const beadMesh = new THREE.Mesh(new THREE.TubeGeometry(beadCurve, 28, 0.009, 8, false), materials.rubberTire);
+            fenderGroup.add(beadMesh);
+
+            if (isFront) {
+                const lampGroup = new THREE.Group();
+                lampGroup.position.set(s * 0.73, 0.21, 0.43);
+                lampGroup.rotation.y = s * 0.06;
+                lampGroup.rotation.x = 0.06;
+
+                const bucketGeo = new THREE.CylinderGeometry(0.135, 0.11, 0.24, 28);
+                bucketGeo.rotateX(Math.PI / 2);
+                const bucket = new THREE.Mesh(bucketGeo, materials.carPaint);
+                bucket.position.z = -0.06;
+                lampGroup.add(bucket);
+
+                const bowlGeo = new THREE.SphereGeometry(0.128, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.45);
+                bowlGeo.rotateX(-Math.PI / 2);
+                const bowl = new THREE.Mesh(bowlGeo, materials.chrome);
+                bowl.position.z = 0.04;
+                lampGroup.add(bowl);
+
+                const bezelGeo = new THREE.TorusGeometry(0.134, 0.02, 16, 36);
+                const bezel = new THREE.Mesh(bezelGeo, materials.chrome);
+                bezel.position.z = 0.055;
+                lampGroup.add(bezel);
+
+                const lensGeo = new THREE.SphereGeometry(0.13, 28, 20, 0, Math.PI * 2, 0, Math.PI * 0.35);
+                lensGeo.rotateX(Math.PI / 2);
+                const lens = new THREE.Mesh(lensGeo, materials.headlampGlass);
+                lens.position.z = 0.01;
+                lampGroup.add(lens);
+
+                const hLight = new THREE.PointLight(0xF0F8FF, 0.85, 6.5);
+                hLight.position.set(0, 0, 0.22);
+                lampGroup.add(hLight);
+                headlampSpotLights.push(hLight);
+
+                const beamAssembly = new THREE.Group();
+                beamAssembly.position.set(0, -0.01, 0.09);
+                beamAssembly.rotation.x = 0.11;
+                beamAssembly.rotation.y = -s * 0.03;
+
+                const coreHalo = new THREE.Sprite(materials.headlampHaloSprite);
+                coreHalo.scale.set(0.62, 0.62, 1);
+                coreHalo.position.set(0, 0, 0.04);
+                beamAssembly.add(coreHalo);
+
+                const wideHalo = new THREE.Sprite(materials.headlampHaloSprite);
+                wideHalo.scale.set(1.35, 1.05, 1);
+                wideHalo.position.set(0, -0.04, 0.38);
+                beamAssembly.add(wideHalo);
+
+                [0, Math.PI / 4, Math.PI / 2, (3 * Math.PI) / 4].forEach((rotAngle) => {
+                    const mistGeo = new THREE.PlaneGeometry(1.45, 3.85);
+                    mistGeo.translate(0, -1.925, 0);
+                    mistGeo.rotateX(-Math.PI / 2);
+                    const mistPlane = new THREE.Mesh(mistGeo, materials.volumetricBeam);
+                    mistPlane.rotation.z = rotAngle;
+                    beamAssembly.add(mistPlane);
+                    volumetricBeamMeshes.push(mistPlane);
+                });
+
+                lampGroup.add(beamAssembly);
+                fenderGroup.add(lampGroup);
+
+                const blinkerGroup = new THREE.Group();
+                blinkerGroup.position.set(s * 0.73, 0.515, 0.08);
+                const blinkerBase = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.042, 0.13), materials.chrome);
+                const blinkerDome = new THREE.Mesh(new THREE.SphereGeometry(0.032, 16, 12), materials.chrome);
+                blinkerDome.scale.set(0.95, 0.8, 1.8);
+                blinkerDome.position.set(0, 0.015, -0.01);
+                const blinkerLens = new THREE.Mesh(new THREE.BoxGeometry(0.058, 0.036, 0.035), materials.turnSignalAmber);
+                blinkerLens.position.z = 0.055;
+                blinkerGroup.add(blinkerBase, blinkerDome, blinkerLens);
+                fenderGroup.add(blinkerGroup);
+            } else {
+                const tailGroup = new THREE.Group();
+                tailGroup.position.set(s * 0.72, 0.19, -0.44);
+                tailGroup.rotation.x = -0.22;
+                tailGroup.rotation.y = -s * 0.08;
+
+                const tailPod = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.082, 0.14, 20), materials.carPaint);
+                tailPod.rotation.x = Math.PI / 2;
+                tailPod.scale.set(0.82, 1.25, 1.0);
+                tailGroup.add(tailPod);
+
+                const tailBezel = new THREE.Mesh(new THREE.TorusGeometry(0.072, 0.012, 12, 24), materials.chrome);
+                tailBezel.scale.set(0.82, 1.25, 1.0);
+                tailBezel.position.z = -0.068;
+                tailGroup.add(tailBezel);
+
+                const tailLens = new THREE.Mesh(new THREE.SphereGeometry(0.068, 18, 14), materials.tailLampRed);
+                tailLens.scale.set(0.78, 1.2, 0.55);
+                tailLens.position.z = -0.065;
+                tailGroup.add(tailLens);
+
+                fenderGroup.add(tailGroup);
+            }
+
+            return fenderGroup;
+        }
+
+        function createClassicBumper(isFront) {
+            const bumper = new THREE.Group();
+            const zSign = isFront ? 1 : -1;
+
+            const bladeCurve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(-0.88, 0, -zSign * 0.22),
+                new THREE.Vector3(-0.74, 0, zSign * 0.01),
+                new THREE.Vector3(0, 0, zSign * 0.06),
+                new THREE.Vector3(0.74, 0, zSign * 0.01),
+                new THREE.Vector3(0.88, 0, -zSign * 0.22)
+            ]);
+            const bladeGeo = new THREE.TubeGeometry(bladeCurve, 44, 0.048, 16, false);
+            bladeGeo.scale(1, 1.38, 0.52);
+            const bladeMesh = new THREE.Mesh(bladeGeo, materials.chrome);
+            bladeMesh.castShadow = true;
+            bumper.add(bladeMesh);
+
+            const grooveGeo = new THREE.TubeGeometry(bladeCurve, 40, 0.014, 8, false);
+            grooveGeo.scale(1.005, 0.5, 0.58);
+            const grooveMesh = new THREE.Mesh(grooveGeo, materials.rubberTire);
+            grooveMesh.position.z = zSign * 0.01;
+            bumper.add(grooveMesh);
+
+            [-0.41, 0.41].forEach((gx) => {
+                const guardGroup = new THREE.Group();
+                guardGroup.position.set(gx, 0.045, zSign * 0.052);
+                guardGroup.rotation.x = isFront ? -0.08 : 0.08;
+
+                const guardBody = new THREE.Mesh(new THREE.BoxGeometry(0.058, 0.23, 0.068), materials.chrome);
+                const guardTop = new THREE.Mesh(new THREE.SphereGeometry(0.03, 14, 12), materials.chrome);
+                guardTop.scale.set(0.95, 0.8, 1.1);
+                guardTop.position.y = 0.115;
+
+                const rubberPad = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.18, 0.022), materials.rubberTire);
+                rubberPad.position.z = zSign * 0.03;
+
+                guardGroup.add(guardBody, guardTop, rubberPad);
+                bumper.add(guardGroup);
+            });
+
+            [-0.41, 0.41].forEach((bx) => {
+                const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.045, 0.26), materials.chassisDark);
+                bracket.position.set(bx, -0.01, -zSign * 0.1);
+                bumper.add(bracket);
+            });
+
+            if (isFront) {
+                const plateHolder = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.135, 0.016), materials.chrome);
+                plateHolder.position.set(0, -0.042, 0.072);
+                const plateFace = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.12), materials.licensePlate);
+                plateFace.position.z = 0.01;
+                plateHolder.add(plateFace);
+                bumper.add(plateHolder);
+            }
+
+            return bumper;
+        }
+
+        function buildClassicBeetle() {
+            // 1. ARCHITECTURAL FLOOR COMPASS, LIGHT POOLS & SOFT CONTACT SHADOW
+            const shadowPlaneGeo = new THREE.CircleGeometry(5.2, 64);
+            shadowPlaneGeo.rotateX(-Math.PI / 2);
+            shadowPlaneMat = new THREE.ShadowMaterial({ opacity: 0.28 });
+            const shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowPlaneMat);
+            shadowPlane.position.y = -0.74;
+            shadowPlane.receiveShadow = true;
+            scene.add(shadowPlane);
+
+            const ringGeo = new THREE.RingGeometry(2.65, 2.7, 64);
+            ringGeo.rotateX(-Math.PI / 2);
+            groundRingMat = new THREE.MeshBasicMaterial({ color: 0x8E8474, side: THREE.DoubleSide, transparent: true, opacity: 0.45 });
+            const groundRing = new THREE.Mesh(ringGeo, groundRingMat);
+            groundRing.position.y = -0.735;
+            scene.add(groundRing);
+
+            [-0.78, 0.78].forEach((px) => {
+                const poolGeo = new THREE.PlaneGeometry(2.1, 4.6);
+                poolGeo.rotateX(-Math.PI / 2);
+                const poolMesh = new THREE.Mesh(poolGeo, materials.groundLightPool);
+                poolMesh.position.set(px, -0.732, 3.65);
+                poolMesh.rotation.z = px > 0 ? -0.06 : 0.06;
+                beetleRoot.add(poolMesh);
+            });
+
+            cyberTailStreaksGroup = new THREE.Group();
+            cyberTailStreaksGroup.visible = false;
+            [-0.74, -0.68, 0.68, 0.74].forEach((sx, idx) => {
+                const streakGeo = new THREE.PlaneGeometry(idx % 2 === 0 ? 0.12 : 0.05, 4.2);
+                streakGeo.rotateX(-Math.PI / 2);
+                const streakMat = new THREE.MeshBasicMaterial({
+                    color: idx % 2 === 0 ? 0xFF1E8A : 0x00F0FF,
+                    transparent: true,
+                    opacity: 0.65,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+                const streak = new THREE.Mesh(streakGeo, streakMat);
+                streak.position.set(sx, -0.728, -3.55);
+                cyberTailStreaksGroup.add(streak);
+            });
+            beetleRoot.add(cyberTailStreaksGroup);
+
+            // 2. CHASSIS PAN, RIBBED RUNNING BOARDS & 4 WHITEWALL WHEELS
+            const panGeo = new THREE.BoxGeometry(1.16, 0.07, 3.05);
+            const panMesh = new THREE.Mesh(panGeo, materials.chassisDark);
+            panMesh.position.y = -0.36;
+            panMesh.castShadow = true;
+            chassisGroup.add(panMesh);
+
+            const frontAxle = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 1.52, 12), materials.chassisDark);
+            frontAxle.rotation.z = Math.PI / 2;
+            frontAxle.position.set(0, -0.34, 1.22);
+            const rearAxle = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 1.52, 12), materials.chassisDark);
+            rearAxle.rotation.z = Math.PI / 2;
+            rearAxle.position.set(0, -0.34, -1.18);
+            chassisGroup.add(frontAxle, rearAxle);
+
+            [-1, 1].forEach((s) => {
+                const boardGroup = new THREE.Group();
+                boardGroup.position.set(s * 0.72, -0.37, 0.02);
+
+                const boardBase = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.035, 1.44), materials.rubberTire);
+                const chromeTrim = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.032, 1.45), materials.chrome);
+                chromeTrim.position.x = s * 0.092;
+
+                boardGroup.add(boardBase, chromeTrim);
+                chassisGroup.add(boardGroup);
+            });
+
+            const wheelCoords = [
+                { x: 0.76, y: -0.335, z: 1.22, isLeft: true },
+                { x: -0.76, y: -0.335, z: 1.22, isLeft: false },
+                { x: 0.77, y: -0.335, z: -1.18, isLeft: true },
+                { x: -0.77, y: -0.335, z: -1.18, isLeft: false }
+            ];
+            wheelCoords.forEach((wc) => {
+                const w = createBeetleWheel(wc.isLeft);
+                w.position.set(wc.x, wc.y, wc.z);
+                chassisGroup.add(w);
+                wheelGroupRefs.push({ group: w, baseX: wc.x });
+            });
+
+            // 3. SPLINE-LOFTED BEETLE ROOF, COWL, GREENHOUSE PILLARS & REAR QUARTER
+            const roofSections = [
+                [
+                    new THREE.Vector3(-0.52, 0.58, 0.56),
+                    new THREE.Vector3(-0.28, 0.65, 0.58),
+                    new THREE.Vector3(0.0, 0.665, 0.59),
+                    new THREE.Vector3(0.28, 0.65, 0.58),
+                    new THREE.Vector3(0.52, 0.58, 0.56)
+                ],
+                [
+                    new THREE.Vector3(-0.56, 0.63, 0.08),
+                    new THREE.Vector3(-0.32, 0.73, 0.08),
+                    new THREE.Vector3(0.0, 0.75, 0.08),
+                    new THREE.Vector3(0.32, 0.73, 0.08),
+                    new THREE.Vector3(0.56, 0.63, 0.08)
+                ],
+                [
+                    new THREE.Vector3(-0.55, 0.58, -0.45),
+                    new THREE.Vector3(-0.31, 0.69, -0.45),
+                    new THREE.Vector3(0.0, 0.71, -0.45),
+                    new THREE.Vector3(0.31, 0.69, -0.45),
+                    new THREE.Vector3(0.55, 0.58, -0.45)
+                ],
+                [
+                    new THREE.Vector3(-0.50, 0.44, -0.88),
+                    new THREE.Vector3(-0.27, 0.53, -0.88),
+                    new THREE.Vector3(0.0, 0.55, -0.88),
+                    new THREE.Vector3(0.27, 0.53, -0.88),
+                    new THREE.Vector3(0.50, 0.44, -0.88)
+                ],
+                [
+                    new THREE.Vector3(-0.52, 0.16, -1.25),
+                    new THREE.Vector3(-0.28, 0.21, -1.26),
+                    new THREE.Vector3(0.0, 0.22, -1.27),
+                    new THREE.Vector3(0.28, 0.21, -1.26),
+                    new THREE.Vector3(0.52, 0.16, -1.25)
+                ]
+            ];
+            const roofGeo = createLoftedSurfaceGeometry(roofSections, 36, 24);
+            const roofMesh = new THREE.Mesh(roofGeo, materials.carPaint);
+            roofMesh.castShadow = true;
+            roofMesh.receiveShadow = true;
+            bodyShellGroup.add(roofMesh);
+
+            [-1, 1].forEach((s) => {
+                const gutterCurve = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(s * 0.63, 0.16, 0.76),
+                    new THREE.Vector3(s * 0.53, 0.58, 0.55),
+                    new THREE.Vector3(s * 0.57, 0.63, 0.08),
+                    new THREE.Vector3(s * 0.56, 0.57, -0.45),
+                    new THREE.Vector3(s * 0.53, 0.41, -0.92),
+                    new THREE.Vector3(s * 0.58, 0.12, -1.25)
+                ]);
+                const gutterMesh = new THREE.Mesh(new THREE.TubeGeometry(gutterCurve, 36, 0.011, 8, false), materials.chrome);
+                bodyShellGroup.add(gutterMesh);
+            });
+
+            const cowlSections = [
+                [
+                    new THREE.Vector3(-0.63, -0.35, 0.75),
+                    new THREE.Vector3(-0.65, 0.02, 0.75),
+                    new THREE.Vector3(-0.61, 0.22, 0.75),
+                    new THREE.Vector3(0.0, 0.25, 0.76),
+                    new THREE.Vector3(0.61, 0.22, 0.75),
+                    new THREE.Vector3(0.65, 0.02, 0.75),
+                    new THREE.Vector3(0.63, -0.35, 0.75)
+                ],
+                [
+                    new THREE.Vector3(-0.56, -0.34, 1.25),
+                    new THREE.Vector3(-0.58, -0.04, 1.25),
+                    new THREE.Vector3(-0.48, 0.12, 1.25),
+                    new THREE.Vector3(0.0, -0.08, 1.25),
+                    new THREE.Vector3(0.48, 0.12, 1.25),
+                    new THREE.Vector3(0.58, -0.04, 1.25),
+                    new THREE.Vector3(0.56, -0.34, 1.25)
+                ],
+                [
+                    new THREE.Vector3(-0.42, -0.33, 1.82),
+                    new THREE.Vector3(-0.44, -0.18, 1.84),
+                    new THREE.Vector3(-0.34, -0.12, 1.83),
+                    new THREE.Vector3(0.0, -0.26, 1.84),
+                    new THREE.Vector3(0.34, -0.12, 1.83),
+                    new THREE.Vector3(0.44, -0.18, 1.84),
+                    new THREE.Vector3(0.42, -0.33, 1.82)
+                ]
+            ];
+            const cowlGeo = createLoftedSurfaceGeometry(cowlSections, 28, 24);
+            const cowlMesh = new THREE.Mesh(cowlGeo, materials.carPaint);
+            cowlMesh.castShadow = true;
+            cowlMesh.receiveShadow = true;
+            bodyShellGroup.add(cowlMesh);
+
+            const fuelFlapFrame = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.11, 0.16), materials.chassisDark);
+            fuelFlapFrame.position.set(0.575, 0.06, 0.96);
+            fuelFlapFrame.rotation.z = -0.18;
+            fuelFlapFrame.rotation.y = -0.12;
+            const fuelFlapDoor = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.098, 0.148), materials.carPaint);
+            fuelFlapFrame.add(fuelFlapDoor);
+            bodyShellGroup.add(fuelFlapFrame);
+
+            [-0.35, 0.35].forEach((hx) => {
+                const hornGroup = new THREE.Group();
+                hornGroup.position.set(hx, -0.20, 1.83);
+                hornGroup.rotation.y = hx > 0 ? 0.22 : -0.22;
+                hornGroup.rotation.x = 0.22;
+
+                const grilleFace = new THREE.Mesh(new THREE.CircleGeometry(0.046, 20), materials.hornGrille);
+                grilleFace.scale.set(1.35, 0.82, 1);
+                const grilleRim = new THREE.Mesh(new THREE.TorusGeometry(0.046, 0.007, 10, 24), materials.chrome);
+                grilleRim.scale.set(1.35, 0.82, 1);
+                hornGroup.add(grilleFace, grilleRim);
+                bodyShellGroup.add(hornGroup);
+            });
+
+            [-1, 1].forEach((s) => {
+                const rqLowerSections = [
+                    [
+                        new THREE.Vector3(s * 0.63, -0.35, -0.18),
+                        new THREE.Vector3(s * 0.67, -0.08, -0.18),
+                        new THREE.Vector3(s * 0.63, 0.18, -0.18)
+                    ],
+                    [
+                        new THREE.Vector3(s * 0.62, -0.35, -0.72),
+                        new THREE.Vector3(s * 0.66, -0.06, -0.72),
+                        new THREE.Vector3(s * 0.61, 0.17, -0.72)
+                    ],
+                    [
+                        new THREE.Vector3(s * 0.54, -0.34, -1.28),
+                        new THREE.Vector3(s * 0.58, -0.08, -1.28),
+                        new THREE.Vector3(s * 0.52, 0.15, -1.26)
+                    ]
+                ];
+                if (s < 0) rqLowerSections.forEach(arr => arr.reverse());
+                const rqLowerGeo = createLoftedSurfaceGeometry(rqLowerSections, 20, 12);
+                const rqLowerMesh = new THREE.Mesh(rqLowerGeo, materials.carPaint);
+                rqLowerMesh.castShadow = true;
+                rqLowerMesh.receiveShadow = true;
+                bodyShellGroup.add(rqLowerMesh);
+
+                const cowlTrimCurve = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(s * 0.51, 0.125, 1.26),
+                    new THREE.Vector3(s * 0.63, 0.16, 0.75)
+                ]);
+                bodyShellGroup.add(new THREE.Mesh(new THREE.TubeGeometry(cowlTrimCurve, 14, 0.009, 8, false), materials.chrome));
+
+                const rearTrimCurve = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(s * 0.64, 0.15, -0.18),
+                    new THREE.Vector3(s * 0.62, 0.14, -0.72),
+                    new THREE.Vector3(s * 0.54, 0.10, -1.22)
+                ]);
+                bodyShellGroup.add(new THREE.Mesh(new THREE.TubeGeometry(rearTrimCurve, 18, 0.009, 8, false), materials.chrome));
+
+                const aPillarCurve = new THREE.LineCurve3(
+                    new THREE.Vector3(s * 0.61, 0.18, 0.74),
+                    new THREE.Vector3(s * 0.52, 0.58, 0.56)
+                );
+                bodyShellGroup.add(new THREE.Mesh(new THREE.TubeGeometry(aPillarCurve, 8, 0.028, 10, false), materials.carPaint));
+
+                const bPillarCurve = new THREE.LineCurve3(
+                    new THREE.Vector3(s * 0.63, 0.17, -0.18),
+                    new THREE.Vector3(s * 0.56, 0.61, -0.16)
+                );
+                bodyShellGroup.add(new THREE.Mesh(new THREE.TubeGeometry(bPillarCurve, 8, 0.03, 10, false), materials.carPaint));
+
+                const cPillarSections = [
+                    [
+                        new THREE.Vector3(s * 0.60, 0.16, -0.82),
+                        new THREE.Vector3(s * 0.53, 0.48, -0.86)
+                    ],
+                    [
+                        new THREE.Vector3(s * 0.52, 0.15, -1.24),
+                        new THREE.Vector3(s * 0.49, 0.43, -0.92)
+                    ]
+                ];
+                if (s < 0) cPillarSections.forEach(arr => arr.reverse());
+                bodyShellGroup.add(new THREE.Mesh(createLoftedSurfaceGeometry(cPillarSections, 12, 8), materials.carPaint));
+
+                const qWinOutline = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(s * 0.62, 0.19, -0.20),
+                    new THREE.Vector3(s * 0.55, 0.58, -0.19),
+                    new THREE.Vector3(s * 0.54, 0.54, -0.55),
+                    new THREE.Vector3(s * 0.53, 0.44, -0.82),
+                    new THREE.Vector3(s * 0.59, 0.18, -0.80),
+                    new THREE.Vector3(s * 0.62, 0.19, -0.20)
+                ]);
+                const qWinChrome = new THREE.Mesh(new THREE.TubeGeometry(qWinOutline, 36, 0.012, 8, true), materials.chrome);
+                const qWinRubber = new THREE.Mesh(new THREE.TubeGeometry(qWinOutline, 36, 0.015, 8, true), materials.rubberTire);
+                qWinRubber.position.x = -s * 0.004;
+                bodyShellGroup.add(qWinChrome, qWinRubber);
+
+                const qGlassSections = [
+                    [new THREE.Vector3(s * 0.61, 0.19, -0.21), new THREE.Vector3(s * 0.55, 0.57, -0.20)],
+                    [new THREE.Vector3(s * 0.60, 0.185, -0.52), new THREE.Vector3(s * 0.54, 0.53, -0.54)],
+                    [new THREE.Vector3(s * 0.58, 0.18, -0.79), new THREE.Vector3(s * 0.53, 0.43, -0.81)]
+                ];
+                bodyShellGroup.add(new THREE.Mesh(createLoftedSurfaceGeometry(qGlassSections, 12, 6), materials.glassTint));
+            });
+
+            const wsSections = [
+                [new THREE.Vector3(-0.56, 0.23, 0.74), new THREE.Vector3(-0.49, 0.56, 0.56)],
+                [new THREE.Vector3(0.0, 0.26, 0.78), new THREE.Vector3(0.0, 0.59, 0.59)],
+                [new THREE.Vector3(0.56, 0.23, 0.74), new THREE.Vector3(0.49, 0.56, 0.56)]
+            ];
+            bodyShellGroup.add(new THREE.Mesh(createLoftedSurfaceGeometry(wsSections, 20, 8), materials.glassTint));
+
+            const wsFrameCurve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(-0.56, 0.23, 0.74),
+                new THREE.Vector3(0.0, 0.26, 0.78),
+                new THREE.Vector3(0.56, 0.23, 0.74),
+                new THREE.Vector3(0.49, 0.56, 0.56),
+                new THREE.Vector3(0.0, 0.59, 0.59),
+                new THREE.Vector3(-0.49, 0.56, 0.56),
+                new THREE.Vector3(-0.56, 0.23, 0.74)
+            ]);
+            bodyShellGroup.add(new THREE.Mesh(new THREE.TubeGeometry(wsFrameCurve, 44, 0.016, 10, true), materials.rubberTire));
+            const wsChromeMesh = new THREE.Mesh(new THREE.TubeGeometry(wsFrameCurve, 44, 0.011, 10, true), materials.chrome);
+            wsChromeMesh.position.z = 0.007;
+            bodyShellGroup.add(wsChromeMesh);
+
+            [-0.22, 0.16].forEach((wx) => {
+                const wiperGroup = new THREE.Group();
+                wiperGroup.position.set(wx, 0.26, 0.77);
+                const pivotNut = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.03, 10), materials.chrome);
+                pivotNut.rotation.x = Math.PI / 2;
+                const bladeArm = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.012, 0.014), materials.chrome);
+                bladeArm.position.set(0.14, 0.06, -0.02);
+                bladeArm.rotation.z = 0.34;
+                wiperGroup.add(pivotNut, bladeArm);
+                bodyShellGroup.add(wiperGroup);
+            });
+
+            const rvStem = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.09, 8), materials.chrome);
+            rvStem.position.set(0, 0.55, 0.52);
+            const rvMirror = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.048, 0.018), materials.chrome);
+            rvMirror.position.set(0, 0.51, 0.52);
+            bodyShellGroup.add(rvStem, rvMirror);
+
+            const rwSections = [
+                [new THREE.Vector3(-0.45, 0.22, -1.20), new THREE.Vector3(-0.44, 0.44, -0.90)],
+                [new THREE.Vector3(0.0, 0.25, -1.23), new THREE.Vector3(0.0, 0.48, -0.92)],
+                [new THREE.Vector3(0.45, 0.22, -1.20), new THREE.Vector3(0.44, 0.44, -0.90)]
+            ];
+            bodyShellGroup.add(new THREE.Mesh(createLoftedSurfaceGeometry(rwSections, 18, 8), materials.glassTint));
+
+            const rwFrameCurve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(-0.45, 0.22, -1.20),
+                new THREE.Vector3(0.0, 0.25, -1.23),
+                new THREE.Vector3(0.45, 0.22, -1.20),
+                new THREE.Vector3(0.44, 0.44, -0.90),
+                new THREE.Vector3(0.0, 0.48, -0.92),
+                new THREE.Vector3(-0.44, 0.44, -0.90),
+                new THREE.Vector3(-0.45, 0.22, -1.20)
+            ]);
+            bodyShellGroup.add(new THREE.Mesh(new THREE.TubeGeometry(rwFrameCurve, 40, 0.014, 8, true), materials.rubberTire));
+            bodyShellGroup.add(new THREE.Mesh(new THREE.TubeGeometry(rwFrameCurve, 40, 0.010, 8, true), materials.chrome));
+
+            for (let lx = -0.38; lx <= 0.38; lx += 0.032) {
+                const louver = new THREE.Mesh(new THREE.BoxGeometry(0.013, 0.055, 0.008), materials.chassisDark);
+                louver.position.set(lx, 0.19, -1.245);
+                louver.rotation.x = 0.55;
+                bodyShellGroup.add(louver);
+            }
+
+            // 4. OUTWARD-HINGED DOORS
+            [-1, 1].forEach((s) => {
+                const doorPivot = new THREE.Group();
+                doorPivot.position.set(s * 0.64, 0.0, 0.72);
+                bodyShellGroup.add(doorPivot);
+
+                const doorSkinSections = [
+                    [
+                        new THREE.Vector3(-s * 0.01, -0.34, 0.0),
+                        new THREE.Vector3(s * 0.025, -0.06, 0.0),
+                        new THREE.Vector3(-s * 0.01, 0.18, 0.0)
+                    ],
+                    [
+                        new THREE.Vector3(-s * 0.005, -0.34, -0.45),
+                        new THREE.Vector3(s * 0.032, -0.06, -0.45),
+                        new THREE.Vector3(-s * 0.005, 0.18, -0.45)
+                    ],
+                    [
+                        new THREE.Vector3(-s * 0.01, -0.34, -0.89),
+                        new THREE.Vector3(s * 0.028, -0.06, -0.89),
+                        new THREE.Vector3(-s * 0.01, 0.18, -0.89)
+                    ]
+                ];
+                if (s < 0) doorSkinSections.forEach(arr => arr.reverse());
+                const doorSkinMesh = new THREE.Mesh(createLoftedSurfaceGeometry(doorSkinSections, 18, 12), materials.carPaint);
+                doorSkinMesh.castShadow = true;
+                doorSkinMesh.receiveShadow = true;
+                doorPivot.add(doorSkinMesh);
+
+                const innerCard = new THREE.Mesh(new THREE.PlaneGeometry(0.84, 0.46), materials.interiorLeather);
+                innerCard.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2;
+                innerCard.position.set(-s * 0.012, -0.08, -0.45);
+                const armrest = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.035, 0.26), materials.interiorLeather);
+                armrest.position.set(-s * 0.03, -0.04, -0.48);
+                doorPivot.add(innerCard, armrest);
+
+                const winFrameCurve = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(-s * 0.01, 0.18, -0.02),
+                    new THREE.Vector3(-s * 0.10, 0.56, -0.18),
+                    new THREE.Vector3(-s * 0.075, 0.61, -0.52),
+                    new THREE.Vector3(-s * 0.075, 0.60, -0.88),
+                    new THREE.Vector3(-s * 0.01, 0.18, -0.88)
+                ]);
+                doorPivot.add(new THREE.Mesh(new THREE.TubeGeometry(winFrameCurve, 32, 0.013, 8, false), materials.chrome));
+
+                const ventBarCurve = new THREE.LineCurve3(
+                    new THREE.Vector3(-s * 0.015, 0.18, -0.24),
+                    new THREE.Vector3(-s * 0.09, 0.575, -0.24)
+                );
+                doorPivot.add(new THREE.Mesh(new THREE.TubeGeometry(ventBarCurve, 6, 0.011, 8, false), materials.chrome));
+
+                const dGlassSections = [
+                    [new THREE.Vector3(-s * 0.015, 0.18, -0.03), new THREE.Vector3(-s * 0.095, 0.55, -0.18)],
+                    [new THREE.Vector3(-s * 0.015, 0.18, -0.87), new THREE.Vector3(-s * 0.075, 0.59, -0.87)]
+                ];
+                doorPivot.add(new THREE.Mesh(createLoftedSurfaceGeometry(dGlassSections, 10, 6), materials.glassTint));
+
+                const doorBeltCurve = new THREE.LineCurve3(
+                    new THREE.Vector3(s * 0.012, 0.155, -0.01),
+                    new THREE.Vector3(s * 0.012, 0.15, -0.88)
+                );
+                doorPivot.add(new THREE.Mesh(new THREE.TubeGeometry(doorBeltCurve, 8, 0.009, 8, false), materials.chrome));
+
+                [-0.02, 0.11].forEach((hy) => {
+                    const hinge = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.028, 0.035), materials.carPaint);
+                    hinge.position.set(s * 0.015, hy, -0.01);
+                    doorPivot.add(hinge);
+                });
+
+                const handleGroup = new THREE.Group();
+                handleGroup.position.set(s * 0.028, 0.06, -0.74);
+                const handleBar = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.022, 0.13), materials.chrome);
+                const handleTrigger = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.04, 10), materials.chrome);
+                handleTrigger.rotation.z = Math.PI / 2;
+                handleTrigger.position.set(0, 0, -0.04);
+                handleGroup.add(handleBar, handleTrigger);
+                doorPivot.add(handleGroup);
+
+                const mirrorGroup = new THREE.Group();
+                mirrorGroup.position.set(s * 0.02, 0.19, -0.08);
+                const stalkCurve = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(0, 0, 0),
+                    new THREE.Vector3(s * 0.06, 0.05, 0.02),
+                    new THREE.Vector3(s * 0.11, 0.09, 0.03)
+                ]);
+                const stalkMesh = new THREE.Mesh(new THREE.TubeGeometry(stalkCurve, 12, 0.007, 8, false), materials.chrome);
+                const mirrorHead = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.016, 24), materials.chrome);
+                mirrorHead.rotation.x = Math.PI / 2;
+                mirrorHead.rotation.z = -s * 0.2;
+                mirrorHead.position.set(s * 0.115, 0.095, 0.03);
+                mirrorGroup.add(stalkMesh, mirrorHead);
+                doorPivot.add(mirrorGroup);
+
+                if (s > 0) leftDoorPivot = doorPivot;
+                else rightDoorPivot = doorPivot;
+            });
+
+            // 5. SPLINE-LOFTED TAPERED FRONT BONNET
+            frontHoodPivot = new THREE.Group();
+            frontHoodPivot.position.set(0, 0.27, 0.76);
+            bodyShellGroup.add(frontHoodPivot);
+
+            const hoodSections = [
+                [
+                    new THREE.Vector3(-0.53, -0.03, 0.0),
+                    new THREE.Vector3(-0.34, 0.02, 0.02),
+                    new THREE.Vector3(0.0, 0.042, 0.03),
+                    new THREE.Vector3(0.34, 0.02, 0.02),
+                    new THREE.Vector3(0.53, -0.03, 0.0)
+                ],
+                [
+                    new THREE.Vector3(-0.47, -0.07, 0.38),
+                    new THREE.Vector3(-0.28, 0.015, 0.40),
+                    new THREE.Vector3(0.0, 0.04, 0.42),
+                    new THREE.Vector3(0.28, 0.015, 0.40),
+                    new THREE.Vector3(0.47, -0.07, 0.38)
+                ],
+                [
+                    new THREE.Vector3(-0.37, -0.20, 0.76),
+                    new THREE.Vector3(-0.21, -0.09, 0.80),
+                    new THREE.Vector3(0.0, -0.06, 0.82),
+                    new THREE.Vector3(0.21, -0.09, 0.80),
+                    new THREE.Vector3(0.37, -0.20, 0.76)
+                ],
+                [
+                    new THREE.Vector3(-0.24, -0.43, 1.01),
+                    new THREE.Vector3(-0.13, -0.34, 1.06),
+                    new THREE.Vector3(0.0, -0.31, 1.08),
+                    new THREE.Vector3(0.13, -0.34, 1.06),
+                    new THREE.Vector3(0.24, -0.43, 1.01)
+                ],
+                [
+                    new THREE.Vector3(-0.14, -0.55, 1.07),
+                    new THREE.Vector3(-0.07, -0.52, 1.10),
+                    new THREE.Vector3(0.0, -0.51, 1.115),
+                    new THREE.Vector3(0.07, -0.52, 1.10),
+                    new THREE.Vector3(0.14, -0.55, 1.07)
+                ]
+            ];
+            const hoodMesh = new THREE.Mesh(createLoftedSurfaceGeometry(hoodSections, 36, 24), materials.carPaint);
+            hoodMesh.castShadow = true;
+            hoodMesh.receiveShadow = true;
+            frontHoodPivot.add(hoodMesh);
+
+            const spearCurve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(0, 0.048, 0.05),
+                new THREE.Vector3(0, 0.046, 0.42),
+                new THREE.Vector3(0, -0.054, 0.825),
+                new THREE.Vector3(0, -0.304, 1.085)
+            ]);
+            frontHoodPivot.add(new THREE.Mesh(new THREE.TubeGeometry(spearCurve, 28, 0.010, 10, false), materials.chrome));
+
+            const vwHoodBadge = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.012, 24), materials.hubcapChrome);
+            vwHoodBadge.rotation.x = Math.PI / 2 + 0.78;
+            vwHoodBadge.position.set(0, -0.22, 1.015);
+
+            const hoodLatchHandle = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.07, 0.028), materials.chrome);
+            hoodLatchHandle.rotation.x = 0.25;
+            hoodLatchHandle.position.set(0, -0.44, 1.105);
+            frontHoodPivot.add(vwHoodBadge, hoodLatchHandle);
+
+            // 6. SPLINE-LOFTED REAR ENGINE DECKLID
+            rearDecklidPivot = new THREE.Group();
+            rearDecklidPivot.position.set(0, 0.21, -1.26);
+            bodyShellGroup.add(rearDecklidPivot);
+
+            const deckSections = [
+                [
+                    new THREE.Vector3(-0.46, -0.02, 0.0),
+                    new THREE.Vector3(-0.25, 0.025, -0.02),
+                    new THREE.Vector3(0.0, 0.038, -0.03),
+                    new THREE.Vector3(0.25, 0.025, -0.02),
+                    new THREE.Vector3(0.46, -0.02, 0.0)
+                ],
+                [
+                    new THREE.Vector3(-0.42, -0.17, -0.34),
+                    new THREE.Vector3(-0.23, -0.10, -0.39),
+                    new THREE.Vector3(0.0, -0.08, -0.41),
+                    new THREE.Vector3(0.23, -0.10, -0.39),
+                    new THREE.Vector3(0.42, -0.17, -0.34)
+                ],
+                [
+                    new THREE.Vector3(-0.34, -0.37, -0.54),
+                    new THREE.Vector3(-0.18, -0.32, -0.60),
+                    new THREE.Vector3(0.0, -0.30, -0.62),
+                    new THREE.Vector3(0.18, -0.32, -0.60),
+                    new THREE.Vector3(0.34, -0.37, -0.54)
+                ],
+                [
+                    new THREE.Vector3(-0.22, -0.52, -0.60),
+                    new THREE.Vector3(-0.12, -0.49, -0.65),
+                    new THREE.Vector3(0.0, -0.48, -0.66),
+                    new THREE.Vector3(0.12, -0.49, -0.65),
+                    new THREE.Vector3(0.22, -0.52, -0.60)
+                ]
+            ];
+            const deckMesh = new THREE.Mesh(createLoftedSurfaceGeometry(deckSections, 28, 20), materials.carPaint);
+            deckMesh.castShadow = true;
+            deckMesh.receiveShadow = true;
+            rearDecklidPivot.add(deckMesh);
+
+            const rearLightNose = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.04, 0.045), materials.chrome);
+            rearLightNose.rotation.x = 0.58;
+            rearLightNose.position.set(0, -0.19, -0.535);
+
+            const rearPlateMount = new THREE.Group();
+            rearPlateMount.position.set(0, -0.32, -0.632);
+            rearPlateMount.rotation.x = 0.42;
+            const rearPlateFrame = new THREE.Mesh(new THREE.BoxGeometry(0.39, 0.11, 0.012), materials.chrome);
+            const rearPlateFace = new THREE.Mesh(new THREE.PlaneGeometry(0.37, 0.098), materials.licensePlate);
+            rearPlateFace.rotation.y = Math.PI;
+            rearPlateFace.position.z = -0.008;
+            rearPlateMount.add(rearPlateFrame, rearPlateFace);
+
+            const rearTHandle = new THREE.Mesh(new THREE.BoxGeometry(0.048, 0.034, 0.032), materials.chrome);
+            rearTHandle.position.set(0, -0.45, -0.672);
+            rearDecklidPivot.add(rearLightNose, rearPlateMount, rearTHandle);
+
+            // 7. 4 SCULPTED TEARDROP FENDERS & FRONT/REAR BUMPERS
+            const flFender = createSculptedFender(true, true);
+            flFender.position.set(0, -0.335, 1.22);
+            const frFender = createSculptedFender(true, false);
+            frFender.position.set(0, -0.335, 1.22);
+            const rlFender = createSculptedFender(false, true);
+            rlFender.position.set(0, -0.335, -1.18);
+            const rrFender = createSculptedFender(false, false);
+            rrFender.position.set(0, -0.335, -1.18);
+            fendersGroup.add(flFender, frFender, rlFender, rrFender);
+
+            const frontBumper = createClassicBumper(true);
+            frontBumper.position.set(0, -0.28, 1.98);
+            const rearBumper = createClassicBumper(false);
+            rearBumper.position.set(0, -0.28, -1.96);
+            bumpersGroup.add(frontBumper, rearBumper);
+
+            // 8. DETAILED 1500cc AIR-COOLED FLAT-4 BOXER ENGINE
+            engineGroup.position.set(0, -0.26, -1.42);
+            const engineBlock = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.24, 0.36), materials.engineMetal);
+            const fanShroud = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.12, 24), materials.chassisDark);
+            fanShroud.rotation.x = Math.PI / 2;
+            fanShroud.position.set(0, 0.14, 0.06);
+            const generatorCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.22, 16), materials.chrome);
+            generatorCyl.rotation.x = Math.PI / 2;
+            generatorCyl.position.set(0, 0.11, -0.06);
+            const airCleaner = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.07, 18), materials.chassisDark);
+            airCleaner.position.set(0.06, 0.19, -0.08);
+            const beltPulley = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.02, 20), materials.chrome);
+            beltPulley.rotation.x = Math.PI / 2;
+            beltPulley.position.set(0, 0.01, -0.19);
+            engineGroup.add(engineBlock, fanShroud, generatorCyl, airCleaner, beltPulley);
+
+            [-0.19, 0.19].forEach((ex) => {
+                const pipeGeo = new THREE.CylinderGeometry(0.022, 0.022, 0.48, 14);
+                pipeGeo.rotateX(Math.PI / 2);
+                const pipe = new THREE.Mesh(pipeGeo, materials.chrome);
+                pipe.position.set(ex, -0.09, -0.44);
+                engineGroup.add(pipe);
+            });
+
+            // 9. VINTAGE INTERIOR CABIN
+            [-0.28, 0.28].forEach((sx) => {
+                const seatCushion = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.44), materials.interiorLeather);
+                seatCushion.position.set(sx, -0.22, 0.12);
+                const seatBack = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.50, 0.095), materials.interiorLeather);
+                seatBack.position.set(sx, 0.06, -0.06);
+                seatBack.rotation.x = -0.15;
+                const headrest = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.21, 16), materials.interiorLeather);
+                headrest.rotation.z = Math.PI / 2;
+                headrest.position.set(sx, 0.35, -0.10);
+                interiorGroup.add(seatCushion, seatBack, headrest);
+            });
+
+            const rearCushion = new THREE.Mesh(new THREE.BoxGeometry(1.02, 0.13, 0.38), materials.interiorLeather);
+            rearCushion.position.set(0, -0.18, -0.52);
+            const rearBack = new THREE.Mesh(new THREE.BoxGeometry(1.00, 0.44, 0.09), materials.interiorLeather);
+            rearBack.position.set(0, 0.06, -0.72);
+            rearBack.rotation.x = -0.12;
+            interiorGroup.add(rearCushion, rearBack);
+
+            const dashBar = new THREE.Mesh(new THREE.BoxGeometry(1.12, 0.19, 0.22), materials.carPaint);
+            dashBar.position.set(0, 0.15, 0.62);
+            const dashTrim = new THREE.Mesh(new THREE.BoxGeometry(1.13, 0.015, 0.23), materials.chrome);
+            dashTrim.position.set(0, 0.15, 0.62);
+            const speedoBezel = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.072, 0.04, 24), materials.chrome);
+            speedoBezel.rotation.x = Math.PI / 2;
+            speedoBezel.position.set(0.28, 0.17, 0.50);
+            interiorGroup.add(dashBar, dashTrim, speedoBezel);
+
+            const steerGroup = new THREE.Group();
+            steerGroup.position.set(0.28, 0.19, 0.38);
+            steerGroup.rotation.x = -0.34;
+            const steerRim = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.014, 12, 32), materials.rubberTire);
+            const hornRing = new THREE.Mesh(new THREE.TorusGeometry(0.105, 0.007, 8, 24, Math.PI), materials.chrome);
+            hornRing.rotation.z = Math.PI;
+            const steerSpoke = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.02, 0.014), materials.chrome);
+            const steerCol = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.30, 12), materials.chassisDark);
+            steerCol.rotation.x = Math.PI / 2;
+            steerCol.position.z = 0.15;
+            steerGroup.add(steerRim, hornRing, steerSpoke, steerCol);
+            interiorGroup.add(steerGroup);
+
+            const shifterStick = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.28, 8), materials.chrome);
+            shifterStick.position.set(0, -0.18, 0.32);
+            shifterStick.rotation.x = -0.22;
+            const shifterKnob = new THREE.Mesh(new THREE.SphereGeometry(0.024, 14, 14), materials.rubberTire);
+            shifterKnob.position.set(0, -0.05, 0.29);
+            interiorGroup.add(shifterStick, shifterKnob);
+        }
+
+        buildClassicBeetle();
+
+        ['body', 'wheels', 'interior', 'trim'].forEach(p => {
+            const dot = document.getElementById(`dot-${p}`);
+            if (dot) dot.style.backgroundColor = currentFinish[p];
+        });
+
+        // ============================================================================
+        // 5. CAMERA ORBIT CONTROLS & SMOOTH INTERPOLATION
+        // ============================================================================
+        const cameraTarget = new THREE.Vector3(0, -0.02, 0.05);
+        let spherical = {
+            radius: 6.8,
+            theta: 0.64,
+            phi: 1.38
+        };
+        let targetSpherical = { ...spherical };
+
+        let isDragging = false;
+        let prevMouse = { x: 0, y: 0 };
+
+        container.addEventListener('pointerdown', (e) => {
+            isDragging = true;
+            prevMouse = { x: e.clientX, y: e.clientY };
+            if (appState.autoRotate) {
+                toggleAutoRotate(false);
+            }
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - prevMouse.x;
+            const dy = e.clientY - prevMouse.y;
+            prevMouse = { x: e.clientX, y: e.clientY };
+
+            targetSpherical.theta -= dx * 0.0075;
+            targetSpherical.phi = Math.max(0.45, Math.min(1.68, targetSpherical.phi - dy * 0.0065));
+        });
+
+        window.addEventListener('pointerup', () => {
+            isDragging = false;
+        });
+
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            targetSpherical.radius = Math.max(4.4, Math.min(11.2, targetSpherical.radius + e.deltaY * 0.004));
+        }, { passive: false });
+
+        function showToast(msg) {
+            const toast = document.getElementById('hud-toast');
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            clearTimeout(window.toastTimer);
+            window.toastTimer = setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2200);
+        }
+
+        // ============================================================================
+        // 6. UI INTERACTION HANDLERS (DOORS, BONNET, HEADLIGHTS, EXPLODED, VIEWS)
+        // ============================================================================
+        function toggleHudPanels() {
+            const isCollapsed = document.body.classList.toggle('hud-collapsed');
+            const expandBtn = document.getElementById('btn-expand-hud');
+            if (expandBtn) {
+                expandBtn.classList.toggle('hidden', !isCollapsed);
+                expandBtn.classList.toggle('flex', isCollapsed);
+            }
+            showToast(isCollapsed ? 'FULLSCREEN VIEW · 参数栏已收起，点击左上角可恢复' : 'HUD PANELS RESTORED · 参数控制栏已展开');
+        }
+
+        function toggleAutoRotate(forceState) {
+            appState.autoRotate = typeof forceState === 'boolean' ? forceState : !appState.autoRotate;
+            const dot = document.getElementById('rotate-dot');
+            const text = document.getElementById('rotate-status-text');
+            if (appState.autoRotate) {
+                dot.className = 'w-2 h-2 rounded-full bg-[#E86F2C] pulse-dot';
+                text.textContent = 'DRAG OR CLICK: AUTO-ROTATE';
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-[#8E8474]';
+                text.textContent = 'MANUAL ORBIT: DRAG TO ROTATE';
+            }
+        }
+
+        function toggleFeature(feature) {
+            if (feature === 'doors') {
+                appState.doorsOpen = !appState.doorsOpen;
+                document.getElementById('btn-doors').classList.toggle('active', appState.doorsOpen);
+                showToast(appState.doorsOpen ? 'DOORS OPENED · 双侧车门已开启' : 'DOORS CLOSED · 车门已闭合');
+            } else if (feature === 'hoods') {
+                appState.hoodsOpen = !appState.hoodsOpen;
+                document.getElementById('btn-hoods').classList.toggle('active', appState.hoodsOpen);
+                showToast(appState.hoodsOpen ? 'BONNET & ENGINE DECKLID OPEN · 前备箱与后引擎盖已掀开' : 'BONNET & ENGINE DECKLID CLOSED · 前后舱盖已闭合');
+            } else if (feature === 'lights') {
+                appState.lightsOn = !appState.lightsOn;
+                updateLightingAndBeams();
+                showToast(appState.lightsOn ? 'SEALED-BEAM HEADLAMPS ON · 复古卤素大灯已点亮' : 'HEADLAMPS OFF · 车灯已关闭');
+            } else if (feature === 'exploded') {
+                appState.explodedView = !appState.explodedView;
+                const expBtn = document.getElementById('btn-exploded');
+                if (expBtn) expBtn.classList.toggle('active', appState.explodedView);
+                showToast(appState.explodedView ? 'EXPLODED ENGINEERING VIEW · 底盘与车身爆炸拆解视图' : 'ASSEMBLED VEHICLE · 整车合拢视图');
+            } else if (feature === 'cruise') {
+                appState.cruiseActive = !appState.cruiseActive;
+                document.getElementById('btn-cruise').classList.toggle('active', appState.cruiseActive);
+                showToast(appState.cruiseActive ? 'FLAT-4 ENGINE & ROAD CRUISE · 引擎怠速与车轮运转开启' : 'STATIC STUDIO DISPLAY · 静态展厅检视');
+            } else if (feature === 'wireframe') {
+                appState.wireframeMode = !appState.wireframeMode;
+                document.getElementById('btn-wireframe').classList.toggle('active', appState.wireframeMode);
+                Object.values(materials).forEach(mat => {
+                    if (mat !== materials.volumetricBeam && mat !== materials.headlampHaloSprite && mat !== materials.groundLightPool) {
+                        mat.wireframe = appState.wireframeMode;
+                    }
+                });
+                showToast(appState.wireframeMode ? 'CAD BLUEPRINT WIREFRAME · 工程线框图模式' : 'CLEARCOAT STUDIO SHADER · 真实车漆渲染模式');
+            } else if (feature === 'annotations') {
+                appState.annotationsVisible = !appState.annotationsVisible;
+                const btn = document.getElementById('btn-annotations');
+                if (btn) btn.classList.toggle('active', appState.annotationsVisible);
+                const svgEl = document.getElementById('callout-svg');
+                const layerEl = document.getElementById('callout-layer');
+                if (svgEl) svgEl.style.opacity = appState.annotationsVisible ? '1' : '0';
+                if (layerEl) {
+                    layerEl.style.opacity = appState.annotationsVisible ? '1' : '0';
+                    layerEl.style.pointerEvents = appState.annotationsVisible ? '' : 'none';
+                }
+                showToast(appState.annotationsVisible ? 'ANNOTATIONS SHOWN · 工程标注文字与引线已开启' : 'ANNOTATIONS HIDDEN · 工程标注文字与引线已隐藏');
+            }
+        }
+
+        function setCameraView(viewName) {
+            appState.currentView = viewName;
+            toggleAutoRotate(false);
+
+            ['iso', 'side', 'front', 'rear'].forEach(v => {
+                const btn = document.getElementById(`view-${v}`);
+                if (btn) btn.classList.toggle('active', v === viewName);
+                const elev = document.getElementById(`elev-${v}`);
+                if (elev) elev.classList.toggle('active', v === viewName);
+            });
+
+            if (viewName === 'iso') {
+                targetSpherical = { radius: 7.2, theta: 0.72, phi: 1.32 };
+                showToast('ISOMETRIC 3/4 PERSPECTIVE · 经典轴测视角');
+            } else if (viewName === 'side') {
+                targetSpherical = { radius: 7.6, theta: Math.PI / 2, phi: 1.48 };
+                showToast('SIDE PROFILE ELEVATION · 侧立面流线轮廓');
+            } else if (viewName === 'front') {
+                targetSpherical = { radius: 6.8, theta: 0, phi: 1.44 };
+                showToast('FRONT ELEVATION · 正立面迎面视角');
+            } else if (viewName === 'rear') {
+                targetSpherical = { radius: 6.8, theta: Math.PI, phi: 1.42 };
+                showToast('REAR ELEVATION · 背立面风冷引擎视角');
+            }
+        }
+
+        function focusAnnotation(id) {
+            toggleAutoRotate(false);
+            document.querySelectorAll('.callout-node').forEach((el, idx) => {
+                el.classList.toggle('active', idx + 1 === id);
+            });
+
+            if (id === 1) {
+                targetSpherical = { radius: 5.8, theta: 0.35, phi: 1.2 };
+                if (!appState.hoodsOpen) toggleFeature('hoods');
+                else showToast('ANNOTATION 01 // FRONT LUGGAGE BONNET · 流线前备箱盖');
+            } else if (id === 2) {
+                targetSpherical = { radius: 5.6, theta: 0.18, phi: 1.45 };
+                if (!appState.lightsOn) toggleFeature('lights');
+                showToast('ANNOTATION 02 // 1968 OVERRIDER BUMPER & HEADLAMPS');
+            } else if (id === 3) {
+                targetSpherical = { radius: 5.8, theta: 2.65, phi: 1.3 };
+                if (!appState.hoodsOpen) toggleFeature('hoods');
+                else showToast('ANNOTATION 03 // 1500CC AIR-COOLED FLAT-4 BOXER ENGINE');
+            } else if (id === 4) {
+                targetSpherical = { radius: 5.6, theta: 1.15, phi: 1.5 };
+                showToast('ANNOTATION 04 // SLOTTED CREAM STEEL WHEELS & CHROME HUBCAPS');
+            }
+        }
+
+        // ============================================================================
+        // 6B. ENVIRONMENT MODE CONTROLLER (2s COMET METEORS & GROUNDED CYBER PALM ROAD)
+        // ============================================================================
+        const envCanvas = document.getElementById('env-bg-canvas');
+        const envCtx = envCanvas.getContext('2d');
+
+        function resizeEnvCanvas() {
+            envCanvas.width = window.innerWidth;
+            envCanvas.height = window.innerHeight;
+        }
+        resizeEnvCanvas();
+
+        // 1. Starfield for Night & Cyber Skies
+        const nightStars = Array.from({ length: 210 }, () => ({
+            x: Math.random(),
+            y: Math.random() * 0.78,
+            r: Math.random() * 1.4 + 0.35,
+            twinkleSpeed: Math.random() * 2.5 + 0.8,
+            phase: Math.random() * Math.PI * 2
+        }));
+
+        // 2. Reference Image 3 Style Radiant Comet & Meteor Shower with Strict 2.0-Second Loop Cycle
+        const METEOR_CYCLE_SECONDS = 2.0;
+        const meteorTemplates = [
+            // Primary Hero Radiant Comet (Ref Image 3: brilliant starburst head + wide cyan/blue glowing plume)
+            { isHero: true,  phaseOffset: 0.00, startX: 0.56, startY: 0.04, dx: -0.26, dy: 0.38, len: 310, width: 3.4 },
+            // Companion synchronized meteor streaks within the 2-second loop
+            { isHero: false, phaseOffset: 0.18, startX: 0.78, startY: 0.08, dx: -0.22, dy: 0.32, len: 155, width: 1.8 },
+            { isHero: false, phaseOffset: 0.38, startX: 0.36, startY: 0.05, dx: -0.20, dy: 0.30, len: 135, width: 1.5 },
+            { isHero: false, phaseOffset: 0.54, startX: 0.88, startY: 0.16, dx: -0.24, dy: 0.35, len: 170, width: 1.9 },
+            { isHero: true,  phaseOffset: 0.65, startX: 0.68, startY: 0.02, dx: -0.25, dy: 0.36, len: 245, width: 2.8 },
+            { isHero: false, phaseOffset: 0.82, startX: 0.44, startY: 0.12, dx: -0.19, dy: 0.28, len: 125, width: 1.4 }
+        ];
+
+        function drawRefImage3Comet(ctx, headX, headY, ux, uy, len, thickness, isHero, alpha) {
+            const tailX = headX - ux * len;
+            const tailY = headY - uy * len;
+            const angle = Math.atan2(uy, ux);
+
+            ctx.save();
+            if (isHero) {
+                // 1. Outer Wide Cyan-Blue Ionized Dust Plume (Ref Image 3 style)
+                ctx.save();
+                ctx.translate(headX, headY);
+                ctx.rotate(angle);
+
+                const plumeGrad = ctx.createLinearGradient(0, 0, -len * 1.18, 0);
+                plumeGrad.addColorStop(0.0, `rgba(255, 255, 255, ${(0.95 * alpha).toFixed(3)})`);
+                plumeGrad.addColorStop(0.15, `rgba(175, 235, 255, ${(0.72 * alpha).toFixed(3)})`);
+                plumeGrad.addColorStop(0.48, `rgba(85, 175, 255, ${(0.34 * alpha).toFixed(3)})`);
+                plumeGrad.addColorStop(0.82, `rgba(40, 110, 235, ${(0.10 * alpha).toFixed(3)})`);
+                plumeGrad.addColorStop(1.0, 'rgba(20, 70, 190, 0.0)');
+
+                ctx.fillStyle = plumeGrad;
+                ctx.beginPath();
+                ctx.moveTo(4, 0);
+                ctx.quadraticCurveTo(-len * 0.42, -16, -len * 1.18, -32);
+                ctx.lineTo(-len * 1.18, 28);
+                ctx.quadraticCurveTo(-len * 0.42, 14, 4, 0);
+                ctx.closePath();
+                ctx.fill();
+
+                // Secondary inner bright cyan core cone
+                const innerGrad = ctx.createLinearGradient(0, 0, -len * 0.85, 0);
+                innerGrad.addColorStop(0.0, `rgba(255, 255, 255, ${(0.98 * alpha).toFixed(3)})`);
+                innerGrad.addColorStop(0.35, `rgba(210, 245, 255, ${(0.65 * alpha).toFixed(3)})`);
+                innerGrad.addColorStop(1.0, 'rgba(120, 200, 255, 0.0)');
+                ctx.fillStyle = innerGrad;
+                ctx.beginPath();
+                ctx.moveTo(2, 0);
+                ctx.lineTo(-len * 0.85, -8);
+                ctx.lineTo(-len * 0.85, 8);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // 2. Crisp Brilliant Core Streak
+            const coreGrad = ctx.createLinearGradient(headX, headY, tailX, tailY);
+            coreGrad.addColorStop(0.0, `rgba(255, 255, 255, ${(1.0 * alpha).toFixed(3)})`);
+            coreGrad.addColorStop(0.3, `rgba(200, 240, 255, ${(0.82 * alpha).toFixed(3)})`);
+            coreGrad.addColorStop(0.7, `rgba(110, 185, 255, ${(0.32 * alpha).toFixed(3)})`);
+            coreGrad.addColorStop(1.0, 'rgba(70, 140, 255, 0.0)');
+
+            ctx.strokeStyle = coreGrad;
+            ctx.lineWidth = thickness;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(headX, headY);
+            ctx.lineTo(tailX, tailY);
+            ctx.stroke();
+
+            // 3. Radiant Starburst Flare at Comet Head (Ref Image 3 signature cross-star)
+            const haloRadius = isHero ? 42 : 18;
+            const headGlow = ctx.createRadialGradient(headX, headY, 1, headX, headY, haloRadius);
+            headGlow.addColorStop(0.0, `rgba(255, 255, 255, ${alpha.toFixed(3)})`);
+            headGlow.addColorStop(0.28, `rgba(195, 238, 255, ${(0.72 * alpha).toFixed(3)})`);
+            headGlow.addColorStop(0.65, `rgba(100, 180, 255, ${(0.22 * alpha).toFixed(3)})`);
+            headGlow.addColorStop(1.0, 'rgba(70, 140, 255, 0.0)');
+            ctx.fillStyle = headGlow;
+            ctx.beginPath();
+            ctx.arc(headX, headY, haloRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (isHero) {
+                const spikeLen = 52;
+                ctx.strokeStyle = `rgba(245, 252, 255, ${(0.9 * alpha).toFixed(3)})`;
+                ctx.lineWidth = 1.6;
+                ctx.beginPath();
+                ctx.moveTo(headX - spikeLen, headY);
+                ctx.lineTo(headX + spikeLen, headY);
+                ctx.moveTo(headX, headY - spikeLen * 0.75);
+                ctx.lineTo(headX, headY + spikeLen * 0.75);
+                ctx.stroke();
+
+                ctx.strokeStyle = `rgba(180, 230, 255, ${(0.6 * alpha).toFixed(3)})`;
+                ctx.lineWidth = 1.1;
+                const diag = spikeLen * 0.45;
+                ctx.beginPath();
+                ctx.moveTo(headX - diag, headY - diag);
+                ctx.lineTo(headX + diag, headY + diag);
+                ctx.moveTo(headX - diag, headY + diag);
+                ctx.lineTo(headX + diag, headY - diag);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // 3. Towering Realistic Tropical Palm Tree Renderer (Scaled up for Ref Image 2 Grandeur)
+        function drawRealisticPalmTree(ctx, baseX, baseY, scale, sideSign, breezeTime = 0) {
+            if (scale <= 0.025) return;
+            ctx.save();
+
+            // Taller, grander trunk & wider crown so palms tower high above the Beetle as in Ref Image 2
+            const trunkH = 445 * scale;
+            const leanX = -sideSign * 64 * scale + Math.sin(breezeTime * 1.4) * 5 * scale;
+            const topX = baseX + leanX;
+            const topY = baseY - trunkH;
+            const ctrlX = baseX + leanX * 0.38;
+            const ctrlY = baseY - trunkH * 0.54;
+
+            // Curved segmented coconut palm trunk
+            ctx.beginPath();
+            ctx.moveTo(baseX - 12.5 * scale, baseY);
+            ctx.quadraticCurveTo(ctrlX - 5.8 * scale, ctrlY, topX - 3.2 * scale, topY);
+            ctx.lineTo(topX + 3.2 * scale, topY);
+            ctx.quadraticCurveTo(ctrlX + 5.8 * scale, ctrlY, baseX + 12.5 * scale, baseY);
+            ctx.closePath();
+
+            const trunkGrad = ctx.createLinearGradient(baseX - 10 * scale, baseY, topX + 10 * scale, topY);
+            trunkGrad.addColorStop(0, '#09020F');
+            trunkGrad.addColorStop(0.60, '#1C072A');
+            trunkGrad.addColorStop(1, '#340F42');
+            ctx.fillStyle = trunkGrad;
+            ctx.fill();
+
+            // Rim-lit trunk bark rings facing the sunset
+            ctx.strokeStyle = 'rgba(255, 120, 175, 0.26)';
+            ctx.lineWidth = Math.max(0.6, 1.3 * scale);
+            for (let t = 0.10; t < 0.94; t += 0.06) {
+                const omt = 1 - t;
+                const rx = omt * omt * baseX + 2 * omt * t * ctrlX + t * t * topX;
+                const ry = omt * omt * baseY + 2 * omt * t * ctrlY + t * t * topY;
+                const rw = (1 - t * 0.72) * 9.5 * scale;
+                ctx.beginPath();
+                ctx.moveTo(rx - rw * 0.5, ry);
+                ctx.lineTo(rx + rw * 0.5, ry);
+                ctx.stroke();
+            }
+
+            // Crown cluster & Coconut silhouettes
+            ctx.fillStyle = '#0D0318';
+            ctx.beginPath();
+            ctx.arc(topX, topY + 2 * scale, 7.5 * scale, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 11 Lush Arching Feathery Fronds with Individual Pinnae Leaflets
+            const frondSpecs = [
+                { angle: -2.92, len: 148, drop: 54 },
+                { angle: -2.55, len: 168, drop: 42 },
+                { angle: -2.14, len: 178, drop: 26 },
+                { angle: -1.74, len: 154, drop: 14 },
+                { angle: -1.34, len: 132, drop: 10 },
+                { angle: -0.92, len: 154, drop: 18 },
+                { angle: -0.56, len: 178, drop: 28 },
+                { angle: -0.20, len: 170, drop: 44 },
+                { angle: 0.16,  len: 148, drop: 58 },
+                { angle: -2.32, len: 142, drop: 34 },
+                { angle: -0.75, len: 142, drop: 34 }
+            ];
+
+            frondSpecs.forEach((f, fIdx) => {
+                const sway = Math.sin(breezeTime * 1.8 + fIdx) * 0.032;
+                const ang = f.angle + sway;
+                const fLen = f.len * scale;
+                const endX = topX + Math.cos(ang) * fLen;
+                const endY = topY + Math.sin(ang) * fLen + f.drop * scale;
+                const fCtrlX = topX + Math.cos(ang) * fLen * 0.54;
+                const fCtrlY = topY + Math.sin(ang) * fLen * 0.54 - 28 * scale;
+
+                ctx.strokeStyle = '#12041F';
+                ctx.lineWidth = Math.max(0.8, 2.6 * scale);
+                ctx.beginPath();
+                ctx.moveTo(topX, topY);
+                ctx.quadraticCurveTo(fCtrlX, fCtrlY, endX, endY);
+                ctx.stroke();
+
+                const numLeaflets = scale > 0.35 ? 20 : 12;
+                ctx.fillStyle = fIdx % 3 === 0 ? '#1B072E' : '#0E031A';
+                for (let i = 1; i <= numLeaflets; i++) {
+                    const s = i / (numLeaflets + 1);
+                    const oms = 1 - s;
+                    const px = oms * oms * topX + 2 * oms * s * fCtrlX + s * s * endX;
+                    const py = oms * oms * topY + 2 * oms * s * fCtrlY + s * s * endY;
+
+                    const tx = 2 * oms * (fCtrlX - topX) + 2 * s * (endX - fCtrlX);
+                    const ty = 2 * oms * (fCtrlY - topY) + 2 * s * (endY - fCtrlY);
+                    const tangAngle = Math.atan2(ty, tx);
+
+                    const leafletProfile = Math.sin(s * Math.PI);
+                    const leafLen = (38 * leafletProfile + 6) * scale;
+                    const leafHalfW = Math.max(0.7, 2.8 * leafletProfile * scale);
+
+                    [-1, 1].forEach((side) => {
+                        const lAng = tangAngle + side * (0.68 + s * 0.38) + 0.18;
+                        const tipX = px + Math.cos(lAng) * leafLen;
+                        const tipY = py + Math.sin(lAng) * leafLen + 6.5 * scale * s;
+
+                        ctx.beginPath();
+                        ctx.moveTo(px, py);
+                        ctx.quadraticCurveTo(
+                            (px + tipX) * 0.5 + leafHalfW,
+                            (py + tipY) * 0.5 - leafHalfW,
+                            tipX,
+                            tipY
+                        );
+                        ctx.quadraticCurveTo(
+                            (px + tipX) * 0.5 - leafHalfW,
+                            (py + tipY) * 0.5 + leafHalfW,
+                            px,
+                            py
+                        );
+                        ctx.fill();
+                    });
+                }
+            });
+
+            ctx.restore();
+        }
+
+        function renderEnvironmentBackdrop(elapsed) {
+            if (appState.envMode === 'day') return;
+
+            const w = envCanvas.width;
+            const h = envCanvas.height;
+            envCtx.clearRect(0, 0, w, h);
+
+            if (appState.envMode === 'night') {
+                // 1. Deep Cosmic Starry Sky Gradient
+                const skyGrad = envCtx.createLinearGradient(0, 0, 0, h);
+                skyGrad.addColorStop(0.0, '#020611');
+                skyGrad.addColorStop(0.48, '#08142C');
+                skyGrad.addColorStop(0.76, '#102448');
+                skyGrad.addColorStop(1.0, '#04070F');
+                envCtx.fillStyle = skyGrad;
+                envCtx.fillRect(0, 0, w, h);
+
+                // 2. Twinkling Background Stars
+                nightStars.forEach((st) => {
+                    const alpha = 0.28 + 0.72 * Math.abs(Math.sin(elapsed * st.twinkleSpeed + st.phase));
+                    envCtx.fillStyle = `rgba(225, 242, 255, ${alpha.toFixed(2)})`;
+                    envCtx.beginPath();
+                    envCtx.arc(st.x * w, st.y * h, st.r, 0, Math.PI * 2);
+                    envCtx.fill();
+                });
+
+                // 3. Reference Image 3 Style Radiant Meteors with 2.0-Second Loop Cycle
+                meteorTemplates.forEach((tmpl) => {
+                    // Normalized 2-second loop progress (0.0 -> 1.0 every 2.0 seconds)
+                    const cyclePhase = ((elapsed / METEOR_CYCLE_SECONDS) + tmpl.phaseOffset) % 1.0;
+
+                    // Active flight occupies 78% of the 2-second cycle, with smooth ease-in/out
+                    if (cyclePhase < 0.78) {
+                        const flightT = cyclePhase / 0.78;
+                        const envAlpha = Math.sin(flightT * Math.PI);
+
+                        const curX = (tmpl.startX + tmpl.dx * flightT) * w;
+                        const curY = (tmpl.startY + tmpl.dy * flightT) * h;
+
+                        const dirMag = Math.hypot(tmpl.dx * w, tmpl.dy * h) || 1;
+                        const ux = (tmpl.dx * w) / dirMag;
+                        const uy = (tmpl.dy * h) / dirMag;
+
+                        drawRefImage3Comet(envCtx, curX, curY, ux, uy, tmpl.len, tmpl.width, tmpl.isHero, envAlpha);
+                    }
+                });
+
+                // 4. Ground Horizon & Subtle Dark Road Surface so Car is Grounded at Night too
+                const nightHorizonY = h * 0.52;
+                const groundGrad = envCtx.createLinearGradient(0, nightHorizonY, 0, h);
+                groundGrad.addColorStop(0.0, 'rgba(12, 28, 58, 0.0)');
+                groundGrad.addColorStop(0.18, 'rgba(8, 16, 34, 0.78)');
+                groundGrad.addColorStop(0.55, '#060C18');
+                groundGrad.addColorStop(1.0, '#03060C');
+                envCtx.fillStyle = groundGrad;
+                envCtx.fillRect(0, nightHorizonY, w, h - nightHorizonY);
+
+            } else if (appState.envMode === 'cyber') {
+                // ================================================================
+                // CYBERPUNK SUNSET PALM BOULEVARD (Grounded Road & Towering Palms - Ref Image 2)
+                // Raising horizonY to 0.44 and widening road perspective so the 3D Beetle
+                // sits firmly ON the wide wet asphalt road rather than floating!
+                // ================================================================
+                const horizonY = h * 0.44;
+                const vpX = w * 0.5;
+
+                // 1. Rich Crimson-Magenta-Coral Sunset Sky Gradient
+                const cyberSky = envCtx.createLinearGradient(0, 0, 0, horizonY);
+                cyberSky.addColorStop(0.0, '#1B0526');
+                cyberSky.addColorStop(0.28, '#6D0E44');
+                cyberSky.addColorStop(0.62, '#CE244E');
+                cyberSky.addColorStop(0.86, '#F55D52');
+                cyberSky.addColorStop(1.0, '#FFA866');
+                envCtx.fillStyle = cyberSky;
+                envCtx.fillRect(0, 0, w, horizonY);
+
+                // Soft moving sunset cloud bands
+                envCtx.fillStyle = 'rgba(85, 12, 48, 0.25)';
+                for (let c = 0; c < 6; c++) {
+                    const cx = ((c * 0.22 + elapsed * 0.012) % 1.3 - 0.15) * w;
+                    const cy = h * (0.10 + (c % 3) * 0.09);
+                    envCtx.beginPath();
+                    envCtx.ellipse(cx, cy, w * 0.15, h * 0.02, 0, 0, Math.PI * 2);
+                    envCtx.fill();
+                }
+
+                // 2. Enlarged Iconic Striped Synthwave Setting Sun at Vanishing Point
+                const sunR = Math.min(w, h) * 0.195;
+                const sunY = horizonY - sunR * 0.26;
+
+                const sunHalo = envCtx.createRadialGradient(vpX, sunY, sunR * 0.2, vpX, sunY, sunR * 1.75);
+                sunHalo.addColorStop(0, 'rgba(255, 240, 150, 0.62)');
+                sunHalo.addColorStop(0.5, 'rgba(255, 105, 95, 0.28)');
+                sunHalo.addColorStop(1, 'rgba(255, 50, 110, 0)');
+                envCtx.fillStyle = sunHalo;
+                envCtx.beginPath();
+                envCtx.arc(vpX, sunY, sunR * 1.75, 0, Math.PI * 2);
+                envCtx.fill();
+
+                const sunGrad = envCtx.createLinearGradient(vpX, sunY - sunR, vpX, sunY + sunR);
+                sunGrad.addColorStop(0.0, '#FFF8A6');
+                sunGrad.addColorStop(0.50, '#FFB74D');
+                sunGrad.addColorStop(1.0, '#FF387C');
+                envCtx.save();
+                envCtx.fillStyle = sunGrad;
+                envCtx.beginPath();
+                envCtx.arc(vpX, sunY, sunR, 0, Math.PI * 2);
+                envCtx.fill();
+
+                // Horizontal Synthwave Cutout Stripes across Sun
+                envCtx.fillStyle = '#AD234B';
+                for (let sy = sunY - sunR * 0.12; sy < sunY + sunR; sy += sunR * 0.14) {
+                    const barH = Math.max(2, ((sy - (sunY - sunR * 0.18)) / sunR) * 9.5);
+                    envCtx.fillRect(vpX - sunR - 4, sy, sunR * 2 + 8, barH);
+                }
+                envCtx.restore();
+
+                // 3. Distant City Skyline Silhouettes along Horizon Wings
+                const cityBlocks = [
+                    { side: -1, dist: 0.43, w: 0.060, h: 0.22, neon: true },
+                    { side: -1, dist: 0.35, w: 0.048, h: 0.16, neon: false },
+                    { side: -1, dist: 0.28, w: 0.042, h: 0.13, neon: true },
+                    { side: -1, dist: 0.21, w: 0.036, h: 0.09, neon: false },
+                    { side: 1,  dist: 0.43, w: 0.058, h: 0.21, neon: true },
+                    { side: 1,  dist: 0.35, w: 0.048, h: 0.17, neon: false },
+                    { side: 1,  dist: 0.28, w: 0.040, h: 0.14, neon: true },
+                    { side: 1,  dist: 0.21, w: 0.034, h: 0.09, neon: false }
+                ];
+                cityBlocks.forEach((b) => {
+                    const bw = b.w * w;
+                    const bh = b.h * h;
+                    const bx = vpX + b.side * b.dist * w - bw * 0.5;
+                    const by = horizonY - bh;
+
+                    envCtx.fillStyle = '#260829';
+                    envCtx.fillRect(bx, by, bw, bh);
+
+                    if (b.neon) {
+                        envCtx.strokeStyle = 'rgba(0, 240, 255, 0.58)';
+                        envCtx.lineWidth = 1.5;
+                        for (let wy = by + 10; wy < horizonY - 10; wy += 9) {
+                            envCtx.beginPath();
+                            envCtx.moveTo(bx + 6, wy);
+                            envCtx.lineTo(bx + bw - 6, wy);
+                            envCtx.stroke();
+                        }
+                    }
+                });
+
+                // 4. Expanded Wide Wet Reflective Boulevard Road (Covers y = 0.44h to 1.0h so car wheels sit firmly on road)
+                const roadGrad = envCtx.createLinearGradient(0, horizonY, 0, h);
+                roadGrad.addColorStop(0.0, '#47123E');
+                roadGrad.addColorStop(0.28, '#2B0930');
+                roadGrad.addColorStop(0.65, '#170521');
+                roadGrad.addColorStop(1.0, '#090211');
+                envCtx.fillStyle = roadGrad;
+                envCtx.fillRect(0, horizonY, w, h - horizonY);
+
+                // Shimmering Sunset Reflection Column on Wet Asphalt directly under the Beetle
+                const reflGrad = envCtx.createLinearGradient(vpX - w * 0.22, horizonY, vpX + w * 0.22, horizonY);
+                reflGrad.addColorStop(0.0, 'rgba(255, 60, 125, 0.0)');
+                reflGrad.addColorStop(0.28, 'rgba(255, 85, 130, 0.42)');
+                reflGrad.addColorStop(0.50, 'rgba(255, 225, 135, 0.78)');
+                reflGrad.addColorStop(0.72, 'rgba(255, 85, 130, 0.42)');
+                reflGrad.addColorStop(1.0, 'rgba(255, 60, 125, 0.0)');
+                envCtx.fillStyle = reflGrad;
+                envCtx.beginPath();
+                envCtx.moveTo(vpX - w * 0.04, horizonY);
+                envCtx.lineTo(vpX + w * 0.04, horizonY);
+                envCtx.lineTo(vpX + w * 0.36, h);
+                envCtx.lineTo(vpX - w * 0.36, h);
+                envCtx.closePath();
+                envCtx.fill();
+
+                // Animated Water Ripple Highlights & Road Texture rushing under the tires
+                const driveSpeed = 0.42;
+                const numRipples = 22;
+                for (let r = 0; r < numRipples; r++) {
+                    const prog = ((r / numRipples) + elapsed * driveSpeed) % 1;
+                    const depth = Math.pow(prog, 2.1);
+                    const ry = horizonY + depth * (h - horizonY);
+                    const rw = (0.025 + depth * 0.24) * w * (0.75 + 0.25 * Math.sin(r * 4.1 + elapsed * 3));
+
+                    envCtx.strokeStyle = `rgba(255, 232, 160, ${(0.58 * (1 - depth * 0.45)).toFixed(2)})`;
+                    envCtx.lineWidth = Math.max(1.2, 4.0 * depth);
+                    envCtx.beginPath();
+                    envCtx.moveTo(vpX - rw, ry);
+                    envCtx.lineTo(vpX + rw, ry);
+                    envCtx.stroke();
+                }
+
+                // Wide Highway Sidewalk Curbs & Perspective Neon Lanes framing the car
+                [-1, 1].forEach((side) => {
+                    envCtx.fillStyle = '#11031B';
+                    envCtx.beginPath();
+                    envCtx.moveTo(vpX + side * w * 0.032, horizonY);
+                    envCtx.lineTo(vpX + side * w * 0.075, horizonY);
+                    envCtx.lineTo(vpX + side * w * 0.96, h);
+                    envCtx.lineTo(vpX + side * w * 0.56, h);
+                    envCtx.closePath();
+                    envCtx.fill();
+
+                    envCtx.strokeStyle = 'rgba(255, 110, 175, 0.58)';
+                    envCtx.lineWidth = 2.0;
+                    envCtx.beginPath();
+                    envCtx.moveTo(vpX + side * w * 0.032, horizonY);
+                    envCtx.lineTo(vpX + side * w * 0.56, h);
+                    envCtx.stroke();
+                });
+
+                // Scrolling Cyan & Magenta Curb Markers (Strong Grounded Forward Motion)
+                const numSegments = 14;
+                for (let i = 0; i < numSegments; i++) {
+                    const p1 = ((i / numSegments) + elapsed * driveSpeed) % 1;
+                    const p2 = Math.min(1, p1 + 0.048);
+                    const d1 = Math.pow(p1, 2.2);
+                    const d2 = Math.pow(p2, 2.2);
+
+                    const y1 = horizonY + d1 * (h - horizonY);
+                    const y2 = horizonY + d2 * (h - horizonY);
+
+                    envCtx.strokeStyle = `rgba(0, 240, 255, ${(d1 * 0.82).toFixed(2)})`;
+                    envCtx.lineWidth = Math.max(1.2, 3.6 * d1);
+                    [-1, 1].forEach((side) => {
+                        const x1 = vpX + side * (0.032 + d1 * 0.528) * w;
+                        const x2 = vpX + side * (0.032 + d2 * 0.528) * w;
+                        envCtx.beginPath();
+                        envCtx.moveTo(x1, y1);
+                        envCtx.lineTo(x2, y2);
+                        envCtx.stroke();
+                    });
+                }
+
+                // 5. Towering Palm Trees & Lush Tropical Bushes along Both Sides (Ref Image 2 Scale)
+                const numTreePairs = 9;
+                const treePairs = [];
+                for (let i = 0; i < numTreePairs; i++) {
+                    const rawP = ((i / numTreePairs) + elapsed * (driveSpeed * 0.52)) % 1;
+                    treePairs.push(rawP);
+                }
+                treePairs.sort((a, b) => a - b);
+
+                treePairs.forEach((p, idx) => {
+                    const depth = Math.pow(p, 2.15);
+                    const baseY = horizonY + depth * (h - horizonY) * 0.98;
+                    const offsetX = (0.042 + depth * 0.58) * w;
+                    // Boosted scale so foreground palms reach high into the top sky frame
+                    const scale = 0.08 + depth * 1.48;
+
+                    [-1, 1].forEach((side) => {
+                        const bx = vpX + side * offsetX;
+                        envCtx.fillStyle = '#0A0212';
+                        for (let b = -2; b <= 2; b++) {
+                            envCtx.beginPath();
+                            envCtx.arc(
+                                bx + b * 16 * scale,
+                                baseY - Math.abs(2 - Math.abs(b)) * 5 * scale,
+                                (16 + (b % 2) * 6) * scale,
+                                Math.PI,
+                                0
+                            );
+                            envCtx.fill();
+                        }
+
+                        drawRealisticPalmTree(envCtx, bx, baseY, scale, side, elapsed + idx * 0.7);
+                    });
+                });
+            }
+        }
+
+        function updateLightingAndBeams() {
+            const isDarkEnv = appState.envMode === 'night' || appState.envMode === 'cyber';
+            document.getElementById('btn-lights').classList.toggle('active', appState.lightsOn);
+
+            materials.headlampGlass.emissiveIntensity = appState.lightsOn ? (isDarkEnv ? 1.65 : 0.85) : 0.0;
+            materials.turnSignalAmber.emissiveIntensity = appState.lightsOn ? (isDarkEnv ? 1.1 : 0.6) : 0.0;
+            materials.tailLampRed.emissiveIntensity = appState.lightsOn ? (isDarkEnv ? 1.4 : 0.7) : 0.0;
+
+            headlampSpotLights.forEach((l) => {
+                l.intensity = appState.lightsOn ? (isDarkEnv ? 2.4 : 0.85) : 0.0;
+                l.color.setHex(appState.envMode === 'cyber' ? 0xFFE6F2 : 0xF2F8FF);
+            });
+
+            materials.headlampHaloSprite.opacity = appState.lightsOn ? (isDarkEnv ? 0.75 : 0.25) : 0.0;
+            materials.volumetricBeam.opacity = appState.lightsOn ? (isDarkEnv ? 0.28 : 0.06) : 0.0;
+            materials.groundLightPool.opacity = appState.lightsOn ? (isDarkEnv ? 0.52 : 0.12) : 0.0;
+
+            if (cyberTailStreaksGroup) {
+                cyberTailStreaksGroup.visible = (appState.envMode === 'cyber' && appState.lightsOn);
+            }
+        }
+
+        function applyEnvironmentReflectionMap(mode) {
+            const activeEnv = envMaps[mode] || envMaps.day;
+            scene.environment = activeEnv;
+
+            const isCyber = mode === 'cyber';
+            const isNight = mode === 'night';
+
+            [
+                materials.carPaint,
+                materials.wheelRim,
+                materials.chrome,
+                materials.hubcapChrome,
+                materials.engineMetal,
+                materials.glassTint
+            ].forEach((mat) => {
+                mat.envMap = activeEnv;
+                mat.needsUpdate = true;
+            });
+
+            // Boost car paint & chrome reflection intensity in Cyberpunk & Night modes so neon colors shimmer on the body
+            materials.carPaint.envMapIntensity = isCyber ? 2.45 : (isNight ? 1.85 : 1.45);
+            materials.chrome.envMapIntensity = isCyber ? 2.65 : (isNight ? 2.1 : 1.75);
+            materials.hubcapChrome.envMapIntensity = isCyber ? 2.4 : (isNight ? 1.95 : 1.65);
+            materials.glassTint.envMapIntensity = isCyber ? 2.35 : (isNight ? 1.85 : 1.5);
+        }
+
+        function setEnvironmentMode(mode) {
+            appState.envMode = mode;
+
+            ['day', 'night', 'cyber'].forEach((m) => {
+                const btn = document.getElementById(`env-${m}`);
+                if (btn) btn.classList.toggle('active', m === mode);
+            });
+
+            const bodyEl = document.body;
+            const badgeEl = document.getElementById('env-badge');
+            const frameEl = document.getElementById('sheet-frame');
+
+            bodyEl.classList.remove('theme-night', 'theme-cyber');
+            applyEnvironmentReflectionMap(mode);
+
+            if (mode === 'day') {
+                envCanvas.style.opacity = '0';
+                badgeEl.textContent = 'STUDIO DAY';
+                badgeEl.className = 'text-[8px] px-1.5 py-0.5 bg-[#D5CBB8] text-[#221F1D] font-bold rounded-sm';
+                frameEl.style.borderColor = '#8E8474';
+
+                ambientLight.color.setHex(0xFFF9F0);
+                ambientLight.intensity = 0.78;
+                hemiLight.color.setHex(0xFFFFFF);
+                hemiLight.groundColor.setHex(0xC4B69E);
+                hemiLight.intensity = 0.68;
+                sunLight.color.setHex(0xFFF6E5);
+                sunLight.intensity = 1.5;
+                fillLight.color.setHex(0xE8F0F8);
+                fillLight.intensity = 0.65;
+                rimLight.color.setHex(0xFFF0D6);
+                rimLight.intensity = 0.55;
+                groundRingMat.color.setHex(0x8E8474);
+                groundRingMat.opacity = 0.45;
+                shadowPlaneMat.opacity = 0.28;
+                showToast('ENVIRONMENT // ARCHITECTURAL DAYLIGHT · 白天工程图模式');
+
+            } else if (mode === 'night') {
+                bodyEl.classList.add('theme-night');
+                envCanvas.style.opacity = '1';
+                badgeEl.textContent = 'STARRY NIGHT';
+                badgeEl.className = 'text-[8px] px-1.5 py-0.5 bg-[#1D3557] text-[#E0FBFC] font-bold rounded-sm';
+                frameEl.style.borderColor = 'rgba(140, 175, 225, 0.35)';
+
+                appState.lightsOn = true;
+
+                ambientLight.color.setHex(0x8CA8D8);
+                ambientLight.intensity = 0.52;
+                hemiLight.color.setHex(0x78A8F0);
+                hemiLight.groundColor.setHex(0x0D1A32);
+                hemiLight.intensity = 0.68;
+                sunLight.color.setHex(0xC4DCFF);
+                sunLight.intensity = 1.05;
+                fillLight.color.setHex(0x4278D8);
+                fillLight.intensity = 0.72;
+                rimLight.color.setHex(0x98CCFF);
+                rimLight.intensity = 1.18;
+                groundRingMat.color.setHex(0x4A6B9C);
+                groundRingMat.opacity = 0.35;
+                shadowPlaneMat.opacity = 0.48;
+                showToast('ENVIRONMENT // 2s LOOPING COMET NIGHT · 2秒循环璀璨流星雨');
+
+            } else if (mode === 'cyber') {
+                bodyEl.classList.add('theme-cyber');
+                envCanvas.style.opacity = '1';
+                badgeEl.textContent = 'SYNTHWAVE 84';
+                badgeEl.className = 'text-[8px] px-1.5 py-0.5 bg-[#FF1E8A] text-[#FFFFFF] font-bold rounded-sm';
+                frameEl.style.borderColor = 'rgba(0, 240, 255, 0.42)';
+
+                appState.lightsOn = true;
+                // Automatically enable road cruise in Cyber mode so the wheels roll along the palm boulevard
+                if (!appState.cruiseActive) {
+                    appState.cruiseActive = true;
+                    document.getElementById('btn-cruise').classList.add('active');
+                }
+
+                // Strong Synthwave Sunset & Neon Boulevard reflections on the Beetle's bodywork
+                ambientLight.color.setHex(0xE078FF);
+                ambientLight.intensity = 0.68;
+                hemiLight.color.setHex(0xFF45A8);
+                hemiLight.groundColor.setHex(0x00F0FF);
+                hemiLight.intensity = 0.98;
+                sunLight.color.setHex(0xFFB078);
+                sunLight.intensity = 1.45;
+                fillLight.color.setHex(0x00F0FF);
+                fillLight.intensity = 1.25;
+                rimLight.color.setHex(0xFF1E8A);
+                rimLight.intensity = 1.55;
+                groundRingMat.color.setHex(0x00F0FF);
+                groundRingMat.opacity = 0.22;
+                shadowPlaneMat.opacity = 0.58;
+                showToast('ENVIRONMENT // CYBERPUNK PALM BOULEVARD · 赛博棕榈大道与霓虹环境反射');
+            }
+
+            updateLightingAndBeams();
+        }
+
+        // ============================================================================
+        // 7. BESPOKE FINISH COLOR CUSTOMIZER, PAINT SHEEN & STYLE EDITIONS
+        // ============================================================================
+        function renderSwatchGrid() {
+            const grid = document.getElementById('swatch-grid');
+            grid.innerHTML = '';
+            const activeHex = currentFinish[activePartCategory];
+
+            SWATCH_PALETTE.forEach((swatch) => {
+                const btn = document.createElement('button');
+                btn.className = `swatch-btn ${swatch.hex.toLowerCase() === activeHex.toLowerCase() ? 'selected' : ''}`;
+                btn.style.backgroundColor = swatch.hex;
+                btn.title = swatch.name;
+                btn.onclick = () => applySwatchColor(swatch.hex, swatch.name);
+                grid.appendChild(btn);
+            });
+        }
+
+        function selectPartCategory(part) {
+            activePartCategory = part;
+            ['body', 'wheels', 'interior', 'trim'].forEach(p => {
+                document.getElementById(`part-${p}`).classList.toggle('active', p === part);
+            });
+            renderSwatchGrid();
+        }
+
+        function applySwatchColor(hex, swatchName) {
+            currentFinish[activePartCategory] = hex;
+            document.getElementById(`dot-${activePartCategory}`).style.backgroundColor = hex;
+
+            if (activePartCategory === 'body') {
+                materials.carPaint.color.set(hex);
+            } else if (activePartCategory === 'wheels') {
+                materials.wheelRim.color.set(hex);
+            } else if (activePartCategory === 'interior') {
+                materials.interiorLeather.color.set(hex);
+            } else if (activePartCategory === 'trim') {
+                materials.chrome.color.set(hex);
+            }
+
+            renderSwatchGrid();
+            if (swatchName) showToast(`BESPOKE COLOR // ${swatchName}`);
+        }
+
+        function togglePaintFinish() {
+            const btn = document.getElementById('btn-gloss');
+            if (paintFinishMode === 'gloss') {
+                paintFinishMode = 'metallic';
+                materials.carPaint.roughness = 0.16;
+                materials.carPaint.metalness = 0.58;
+                materials.carPaint.clearcoat = 1.0;
+                btn.textContent = 'FINISH: METALLIC';
+                showToast('PAINT FINISH // METALLIC FLAKE · 金属珠光车漆');
+            } else if (paintFinishMode === 'metallic') {
+                paintFinishMode = 'matte';
+                materials.carPaint.roughness = 0.45;
+                materials.carPaint.metalness = 0.08;
+                materials.carPaint.clearcoat = 0.12;
+                btn.textContent = 'FINISH: SATIN';
+                showToast('PAINT FINISH // VINTAGE SATIN · 复古缎面哑光');
+            } else {
+                paintFinishMode = 'gloss';
+                materials.carPaint.roughness = 0.11;
+                materials.carPaint.metalness = 0.08;
+                materials.carPaint.clearcoat = 1.0;
+                btn.textContent = 'FINISH: GLOSS';
+                showToast('PAINT FINISH // MIRROR CLEARCOAT · 镜面高光清漆');
+            }
+        }
+
+        function applyStylePreset(presetKey) {
+            if (presetKey === 'vosvoswhite') {
+                currentFinish = { body: '#F4F1EA', wheels: '#F4F1EA', interior: '#E2D8C5', trim: '#F0F3F5' };
+                showToast('EDITION // ALPINE WHITE VOSVOS · 阿尔卑斯纯白典藏版');
+            } else if (presetKey === 'sunflower') {
+                currentFinish = { body: '#F2B718', wheels: '#F2B718', interior: '#232428', trim: '#F0F3F5' };
+                showToast('EDITION // SUNFLOWER YELLOW · 1968 向日葵明黄双色轮毂版');
+            } else if (presetKey === 'palmsprings') {
+                currentFinish = { body: '#D85E18', wheels: '#EDE3CE', interior: '#DFD4C0', trim: '#F0F3F5' };
+                showToast('EDITION // 1968 PALM SPRINGS ORANGE · 棕榈泉落日橙原厂配色');
+            } else if (presetKey === 'irishgreen') {
+                currentFinish = { body: '#1E5438', wheels: '#D6C6A5', interior: '#9C5B30', trim: '#F0F3F5' };
+                showToast('EDITION // IRISH RACING GREEN · 复古森系绿与焦糖棕内饰');
+            }
+
+            materials.carPaint.color.set(currentFinish.body);
+            materials.wheelRim.color.set(currentFinish.wheels);
+            materials.interiorLeather.color.set(currentFinish.interior);
+            materials.chrome.color.set(currentFinish.trim);
+
+            ['body', 'wheels', 'interior', 'trim'].forEach(p => {
+                document.getElementById(`dot-${p}`).style.backgroundColor = currentFinish[p];
+            });
+            renderSwatchGrid();
+        }
+
+        function resetColors() {
+            paintFinishMode = 'matte';
+            togglePaintFinish();
+            applyStylePreset('vosvoswhite');
+        }
+
+        renderSwatchGrid();
+
+        // ============================================================================
+        // 8. 3D-TO-2D CALLOUT LEADER LINE PROJECTION & ANIMATION LOOP
+        // ============================================================================
+        const calloutAnchors3D = [
+            { id: 1, localPos: new THREE.Vector3(0, -0.05, 0.78), group: frontHoodPivot },
+            { id: 2, localPos: new THREE.Vector3(0.41, -0.22, 2.02), group: bumpersGroup },
+            { id: 3, localPos: new THREE.Vector3(0, -0.12, -0.42), group: rearDecklidPivot },
+            { id: 4, localPos: new THREE.Vector3(0.84, -0.335, -1.18), group: chassisGroup }
+        ];
+
+        function updateCalloutLines() {
+            if (window.innerWidth < 1024) return;
+
+            calloutAnchors3D.forEach((item) => {
+                const worldVec = item.localPos.clone();
+                item.group.localToWorld(worldVec);
+                worldVec.project(camera);
+
+                const sx = (worldVec.x * 0.5 + 0.5) * window.innerWidth;
+                const sy = (-worldVec.y * 0.5 + 0.5) * window.innerHeight;
+
+                const boxEl = document.getElementById(`callout-box-${item.id}`);
+                const polyEl = document.getElementById(`leader-${item.id}`);
+                const dotEl = document.getElementById(`anchor-dot-${item.id}`);
+
+                if (!boxEl || !polyEl || !dotEl) return;
+
+                const rect = boxEl.getBoundingClientRect();
+                const isLeft = item.id <= 2;
+                const startX = isLeft ? rect.right - 10 : rect.left + 12;
+                const startY = rect.top + 14;
+                const elbowX = startX + (isLeft ? 28 : -28);
+
+                polyEl.setAttribute('points', `${startX},${startY} ${elbowX},${startY} ${sx},${sy}`);
+                dotEl.setAttribute('cx', sx);
+                dotEl.setAttribute('cy', sy);
+            });
+        }
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsed = clock.getElapsedTime();
+
+            // 1. Auto-Rotate or Smooth Orbit Interpolation
+            if (appState.autoRotate && !isDragging) {
+                targetSpherical.theta += 0.0036;
+            }
+
+            spherical.radius += (targetSpherical.radius - spherical.radius) * 0.08;
+            spherical.theta += (targetSpherical.theta - spherical.theta) * 0.08;
+            spherical.phi += (targetSpherical.phi - spherical.phi) * 0.08;
+
+            camera.position.x = cameraTarget.x + spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+            camera.position.y = cameraTarget.y + spherical.radius * Math.cos(spherical.phi);
+            camera.position.z = cameraTarget.z + spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+            camera.lookAt(cameraTarget);
+
+            // 2. Smooth OUTWARD Door Opening Animation
+            const targetDoorAngle = appState.doorsOpen ? 1.12 : 0;
+            if (leftDoorPivot && rightDoorPivot) {
+                leftDoorPivot.rotation.y += (-targetDoorAngle - leftDoorPivot.rotation.y) * 0.09;
+                rightDoorPivot.rotation.y += (targetDoorAngle - rightDoorPivot.rotation.y) * 0.09;
+            }
+
+            // 3. Smooth Front Bonnet & Rear Engine Decklid Opening
+            const targetFrontHoodX = appState.hoodsOpen ? -0.76 : 0;
+            const targetRearDeckX = appState.hoodsOpen ? 0.82 : 0;
+            if (frontHoodPivot && rearDecklidPivot) {
+                frontHoodPivot.rotation.x += (targetFrontHoodX - frontHoodPivot.rotation.x) * 0.08;
+                rearDecklidPivot.rotation.x += (targetRearDeckX - rearDecklidPivot.rotation.x) * 0.08;
+            }
+
+            // 4. Smooth Exploded Engineering View Separation
+            const expBodyY = appState.explodedView ? 0.65 : 0;
+            const expChassisY = appState.explodedView ? -0.34 : 0;
+            const expBumperZ = appState.explodedView ? 0.42 : 0;
+            const expEngineZ = appState.explodedView ? -1.86 : -1.42;
+            const expWheelOffset = appState.explodedView ? 0.34 : 0;
+
+            bodyShellGroup.position.y += (expBodyY - bodyShellGroup.position.y) * 0.07;
+            fendersGroup.position.y += (expBodyY * 0.42 - fendersGroup.position.y) * 0.07;
+            chassisGroup.position.y += (expChassisY - chassisGroup.position.y) * 0.07;
+            engineGroup.position.z += (expEngineZ - engineGroup.position.z) * 0.07;
+
+            if (bumpersGroup.children.length === 2) {
+                bumpersGroup.children[0].position.z += ((1.98 + expBumperZ) - bumpersGroup.children[0].position.z) * 0.07;
+                bumpersGroup.children[1].position.z += ((-1.96 - expBumperZ) - bumpersGroup.children[1].position.z) * 0.07;
+            }
+
+            wheelGroupRefs.forEach((wg) => {
+                const targetX = wg.baseX + (wg.baseX > 0 ? expWheelOffset : -expWheelOffset);
+                wg.group.position.x += (targetX - wg.group.position.x) * 0.07;
+            });
+
+            // 5. Road Cruise Mode & Air-Cooled Boxer Engine Vibration
+            if (appState.cruiseActive) {
+                wheelMeshes.forEach(wm => {
+                    wm.rotation.x += 0.14;
+                });
+                beetleRoot.position.y = Math.sin(elapsed * 9.0) * 0.016;
+                beetleRoot.rotation.z = Math.sin(elapsed * 4.5) * 0.008;
+                engineGroup.position.x = Math.sin(elapsed * 42.0) * 0.008;
+            } else {
+                beetleRoot.position.y += (0 - beetleRoot.position.y) * 0.1;
+                beetleRoot.rotation.z += (0 - beetleRoot.rotation.z) * 0.1;
+                engineGroup.position.x = 0;
+            }
+
+            // 6. Update SVG Callout Leader Lines
+            updateCalloutLines();
+
+            // 7. Render Dynamic Environment Backdrop (2s Looping Meteors / Grounded Cyberpunk Boulevard)
+            renderEnvironmentBackdrop(elapsed);
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            resizeEnvCanvas();
+        });
+
+        window.onload = function () {
+            updateLightingAndBeams();
+            animate();
+        };
+    </script>
+</body>
+</html>
